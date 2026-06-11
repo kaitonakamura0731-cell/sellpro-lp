@@ -10,6 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
     <title>SellPro 管理ページ</title>
+    <link rel="icon" href="/logos/sellpro.svg" type="image/svg+xml" />
     <style>
       :root {
         --blue: #1c6fd2;
@@ -321,6 +322,231 @@
         font-size: 12px;
       }
 
+      :global(.form-host) {
+        display: grid;
+        gap: 16px;
+      }
+
+      :global(.form-section),
+      :global(.item-card) {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+      }
+
+      :global(.form-section) {
+        padding: 16px;
+      }
+
+      :global(.form-section h3),
+      :global(.item-title) {
+        margin: 0;
+        color: var(--ink);
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      :global(.section-note) {
+        margin: 4px 0 14px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      :global(.form-grid) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      :global(.field) {
+        display: grid;
+        gap: 6px;
+        min-width: 0;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      :global(.field.wide) {
+        grid-column: 1 / -1;
+      }
+
+      :global(.field span) {
+        overflow-wrap: anywhere;
+      }
+
+      :global(.form-host input),
+      :global(.form-host textarea) {
+        width: 100%;
+        border: 1px solid #c9d5e4;
+        border-radius: 10px;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 10px 11px;
+        outline: none;
+      }
+
+      :global(.form-host textarea) {
+        min-height: 96px;
+        resize: vertical;
+        line-height: 1.7;
+      }
+
+      :global(.form-host input:focus),
+      :global(.form-host textarea:focus) {
+        border-color: var(--blue);
+        box-shadow: 0 0 0 3px rgba(28, 111, 210, .14);
+      }
+
+      :global(.check-row) {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      :global(.check-row input) {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+        padding: 0;
+        accent-color: var(--blue);
+      }
+
+      :global(.list-head),
+      :global(.item-head) {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      :global(.list-head) {
+        margin-bottom: 12px;
+      }
+
+      :global(.list-head p) {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      :global(.item-stack) {
+        display: grid;
+        gap: 12px;
+      }
+
+      :global(.item-card) {
+        display: grid;
+        gap: 14px;
+        padding: 14px;
+      }
+
+      :global(.item-actions) {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      :global(.mini-button),
+      :global(.add-button) {
+        appearance: none;
+        -webkit-appearance: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--blue-dark);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 7px 12px;
+        cursor: pointer;
+        box-shadow: none;
+      }
+
+      :global(.add-button) {
+        background: var(--blue);
+        border-color: var(--blue);
+        color: #fff;
+      }
+
+      :global(.mini-button:hover) {
+        background: var(--blue-soft);
+      }
+
+      :global(.add-button:hover) {
+        background: var(--blue-dark);
+      }
+
+      :global(.remove-button) {
+        color: var(--danger);
+      }
+
+      :global(.qa-list) {
+        display: grid;
+        gap: 10px;
+      }
+
+      :global(.qa-card) {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid #e5edf7;
+        border-radius: 10px;
+        background: #f8fbff;
+      }
+
+      :global(.empty-note) {
+        margin: 0;
+        padding: 14px;
+        border-radius: 10px;
+        background: var(--blue-soft);
+        color: var(--blue-dark);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .json-panel {
+        margin-top: 16px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fbfdff;
+      }
+
+      .json-panel summary {
+        cursor: pointer;
+        padding: 12px 14px;
+        color: var(--blue-dark);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .json-body {
+        display: grid;
+        gap: 10px;
+        padding: 0 14px 14px;
+      }
+
+      .json-body p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .json-panel textarea {
+        min-height: 220px;
+      }
+
       .empty {
         padding: 24px;
         color: var(--muted);
@@ -357,6 +583,10 @@
 
         .file-tabs {
           grid-template-columns: 1fr 1fr;
+        }
+
+        :global(.form-grid) {
+          grid-template-columns: 1fr;
         }
 
         .editor-head {
@@ -441,10 +671,18 @@
               <span id="editorSha">commit: -</span>
               <span>保存後、数分で本番ページに反映されます。</span>
             </div>
-            <textarea id="editorText" spellcheck="false"></textarea>
+            <div class="form-host" id="formHost"></div>
+            <details class="json-panel">
+              <summary>JSONを確認・直接編集</summary>
+              <div class="json-body">
+                <p>通常は上のフォームだけで更新できます。細かい調整が必要な時だけ使ってください。</p>
+                <textarea id="editorText" spellcheck="false"></textarea>
+                <button id="applyJsonButton" class="ghost" type="button">JSONをフォームへ反映</button>
+              </div>
+            </details>
             <div class="actions">
               <button id="saveButton" type="button">保存する</button>
-              <button id="formatButton" class="ghost" type="button">整える</button>
+              <button id="resetButton" class="ghost" type="button">元に戻す</button>
               <button id="reloadButton" class="ghost" type="button">再読み込み</button>
               <span class="status" id="editorStatus"></span>
             </div>
@@ -455,41 +693,21 @@
 
     <script>
       const files = [
-        {
-          key: "banner",
-          title: "バナー",
-          description: "常時表示バナーのON/OFF、画像、リンク",
-        },
-        {
-          key: "docs",
-          title: "資料",
-          description: "資料一覧ページのPDF・準備中表示",
-        },
-        {
-          key: "interviews",
-          title: "インタビュー",
-          description: "導入インタビューの会社情報・Q&A",
-        },
-        {
-          key: "logos",
-          title: "ロゴ",
-          description: "導入企業ロゴと確認中バッジ",
-        },
-        {
-          key: "faqs",
-          title: "FAQ",
-          description: "トップページFAQと構造化データ",
-        },
+        { key: "banner", title: "バナー", description: "常時表示バナーの表示、画像、リンク" },
+        { key: "docs", title: "資料", description: "資料ページに出すPDFと準備中表示" },
+        { key: "interviews", title: "インタビュー", description: "導入インタビューの会社情報とQ&A" },
+        { key: "logos", title: "ロゴ", description: "導入企業ロゴと確認中バッジ" },
+        { key: "faqs", title: "FAQ", description: "トップページのよくある質問" },
       ];
 
       const state = {
         password: sessionStorage.getItem("sellproAdminPassword") || "",
         activeKey: files[0].key,
         records: {},
+        drafts: {},
       };
 
       const $ = (id) => document.getElementById(id);
-
       const loginCard = $("loginCard");
       const workspace = $("workspace");
       const fileTabs = $("fileTabs");
@@ -498,6 +716,7 @@
       const emptyState = $("emptyState");
       const editorPanel = $("editorPanel");
       const editorText = $("editorText");
+      const formHost = $("formHost");
 
       $("passwordInput").value = state.password;
 
@@ -509,6 +728,36 @@
 
       function pretty(value) {
         return JSON.stringify(value, null, 2) + "\n";
+      }
+
+      function clone(value) {
+        return JSON.parse(JSON.stringify(value));
+      }
+
+      function escapeHtml(value = "") {
+        return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[char]);
+      }
+
+      function clean(value) {
+        if (Array.isArray(value)) return value.map(clean);
+        if (value && typeof value === "object") {
+          return Object.fromEntries(Object.entries(value).map(([key, val]) => [key, clean(val)]));
+        }
+        return typeof value === "string" ? value.trim() : value;
+      }
+
+      function currentDraft() {
+        const key = state.activeKey;
+        if (!state.drafts[key] && state.records[key]) {
+          state.drafts[key] = clone(state.records[key].data);
+        }
+        return state.drafts[key];
       }
 
       async function requestContent(key, options = {}) {
@@ -528,14 +777,24 @@
         return payload;
       }
 
+      function summaryLabel(key, data) {
+        if (!data) return "読み込み中";
+        if (key === "banner") return data.enabled ? "表示中" : "非表示";
+        if (key === "docs") return `${data.length}件`;
+        if (key === "interviews") return `${data.length}件`;
+        if (key === "logos") return `${data.length}社`;
+        if (key === "faqs") return `${data.length}件`;
+        return "編集可";
+      }
+
       function renderTabs() {
         fileTabs.innerHTML = files.map((file) => {
           const record = state.records[file.key];
-          const status = record ? "読み込み済み" : "未読込";
+          const draft = state.drafts[file.key] || record?.data;
           return `
             <button class="tab ${file.key === state.activeKey ? "is-active" : ""}" type="button" data-key="${file.key}">
-              <span class="tab-title">${file.title}</span>
-              <span class="tab-sub">${status}</span>
+              <span class="tab-title">${escapeHtml(file.title)}</span>
+              <span class="tab-sub">${escapeHtml(summaryLabel(file.key, draft))}</span>
             </button>
           `;
         }).join("");
@@ -549,6 +808,196 @@
         });
       }
 
+      function textField(label, path, value, placeholder = "", wide = false) {
+        return `
+          <label class="field ${wide ? "wide" : ""}">
+            <span>${escapeHtml(label)}</span>
+            <input data-path="${escapeHtml(path)}" value="${escapeHtml(value)}" placeholder="${escapeHtml(placeholder)}" />
+          </label>
+        `;
+      }
+
+      function textAreaField(label, path, value, placeholder = "") {
+        return `
+          <label class="field wide">
+            <span>${escapeHtml(label)}</span>
+            <textarea data-path="${escapeHtml(path)}" placeholder="${escapeHtml(placeholder)}">${escapeHtml(value)}</textarea>
+          </label>
+        `;
+      }
+
+      function checkboxField(label, path, checked) {
+        return `
+          <label class="check-row">
+            <input type="checkbox" data-path="${escapeHtml(path)}" ${checked ? "checked" : ""} />
+            <span>${escapeHtml(label)}</span>
+          </label>
+        `;
+      }
+
+      function renderBanner(data) {
+        return `
+          <section class="form-section">
+            <h3>バナー設定</h3>
+            <p class="section-note">資料ページへ誘導する下部バナーです。</p>
+            <div class="form-grid">
+              <div class="field wide">${checkboxField("バナーを表示する", "enabled", data.enabled)}</div>
+              ${textField("画像パス", "image", data.image, "banner/banner-docs.webp")}
+              ${textField("リンク先", "link", data.link, "/docs/")}
+              ${textAreaField("代替テキスト", "alt", data.alt, "画像の説明")}
+              <div class="field wide">${checkboxField("別タブで開く", "newTab", data.newTab)}</div>
+            </div>
+          </section>
+        `;
+      }
+
+      function renderDocs(data) {
+        const items = data.map((doc, index) => `
+          <article class="item-card">
+            <div class="item-head">
+              <h3 class="item-title">資料 ${index + 1}</h3>
+              <button class="mini-button remove-button" type="button" data-action="remove-doc" data-index="${index}">削除</button>
+            </div>
+            <div class="form-grid">
+              ${textField("タイトル", `${index}.title`, doc.title)}
+              ${textField("日付", `${index}.date`, doc.date, "2026-05")}
+              ${textField("PDFパス", `${index}.file`, doc.file, "docs/example.pdf", true)}
+              ${textAreaField("説明文", `${index}.description`, doc.description)}
+              <div class="field wide">${checkboxField("ダウンロード可能にする", `${index}.available`, doc.available)}</div>
+            </div>
+          </article>
+        `).join("");
+
+        return `
+          <section class="form-section">
+            <div class="list-head">
+              <div>
+                <h3>資料一覧</h3>
+                <p>PDFファイルは public/docs/ に置いたものを指定します。</p>
+              </div>
+              <button class="add-button" type="button" data-action="add-doc">資料を追加</button>
+            </div>
+            <div class="item-stack">${items || '<p class="empty-note">資料がありません。</p>'}</div>
+          </section>
+        `;
+      }
+
+      function renderInterviews(data) {
+        const items = data.map((interview, index) => {
+          const qaItems = (interview.qa || []).map((qa, qaIndex) => `
+            <div class="qa-card">
+              <div class="item-head">
+                <h3 class="item-title">Q&A ${qaIndex + 1}</h3>
+                <button class="mini-button remove-button" type="button" data-action="remove-qa" data-index="${index}" data-qa-index="${qaIndex}">削除</button>
+              </div>
+              ${textAreaField("質問", `${index}.qa.${qaIndex}.q`, qa.q)}
+              ${textAreaField("回答", `${index}.qa.${qaIndex}.a`, qa.a)}
+            </div>
+          `).join("");
+
+          return `
+            <article class="item-card">
+              <div class="item-head">
+                <h3 class="item-title">${escapeHtml(interview.org || `インタビュー ${index + 1}`)}</h3>
+                <button class="mini-button remove-button" type="button" data-action="remove-interview" data-index="${index}">削除</button>
+              </div>
+              <div class="form-grid">
+                ${textField("会社・業界名", `${index}.org`, interview.org)}
+                ${textField("規模", `${index}.scale`, interview.scale)}
+                ${textField("役職・立場", `${index}.role`, interview.role)}
+                ${textField("画像パス", `${index}.avatar`, interview.avatar, "product/avatar.webp")}
+                <div class="field wide">${checkboxField("サンプルとして表示する", `${index}.sample`, interview.sample)}</div>
+              </div>
+              <div class="list-head">
+                <div>
+                  <h3>Q&A</h3>
+                  <p>導入前課題、決め手、導入後効果など。</p>
+                </div>
+                <button class="add-button" type="button" data-action="add-qa" data-index="${index}">Q&Aを追加</button>
+              </div>
+              <div class="qa-list">${qaItems || '<p class="empty-note">Q&Aがありません。</p>'}</div>
+            </article>
+          `;
+        }).join("");
+
+        return `
+          <section class="form-section">
+            <div class="list-head">
+              <div>
+                <h3>導入インタビュー</h3>
+                <p>実インタビューに差し替える場合は「サンプル」を外します。</p>
+              </div>
+              <button class="add-button" type="button" data-action="add-interview">インタビューを追加</button>
+            </div>
+            <div class="item-stack">${items || '<p class="empty-note">インタビューがありません。</p>'}</div>
+          </section>
+        `;
+      }
+
+      function renderLogos(data) {
+        const items = data.map((logo, index) => `
+          <article class="item-card">
+            <div class="item-head">
+              <h3 class="item-title">${escapeHtml(logo.name || `ロゴ ${index + 1}`)}</h3>
+              <button class="mini-button remove-button" type="button" data-action="remove-logo" data-index="${index}">削除</button>
+            </div>
+            <div class="form-grid">
+              ${textField("会社名", `${index}.name`, logo.name)}
+              ${textField("ロゴファイル名", `${index}.file`, logo.file, "company.png")}
+              <div class="field wide">${checkboxField("確認中バッジを出す", `${index}.pending`, logo.pending)}</div>
+            </div>
+          </article>
+        `).join("");
+
+        return `
+          <section class="form-section">
+            <div class="list-head">
+              <div>
+                <h3>導入企業ロゴ</h3>
+                <p>ロゴファイルは public/logos/ に置いたファイル名だけを指定します。</p>
+              </div>
+              <button class="add-button" type="button" data-action="add-logo">ロゴを追加</button>
+            </div>
+            <div class="item-stack">${items || '<p class="empty-note">ロゴがありません。</p>'}</div>
+          </section>
+        `;
+      }
+
+      function renderFaqs(data) {
+        const items = data.map((faq, index) => `
+          <article class="item-card">
+            <div class="item-head">
+              <h3 class="item-title">FAQ ${index + 1}</h3>
+              <button class="mini-button remove-button" type="button" data-action="remove-faq" data-index="${index}">削除</button>
+            </div>
+            ${textAreaField("質問", `${index}.q`, faq.q)}
+            ${textAreaField("回答", `${index}.a`, faq.a)}
+          </article>
+        `).join("");
+
+        return `
+          <section class="form-section">
+            <div class="list-head">
+              <div>
+                <h3>よくある質問</h3>
+                <p>トップページ表示と検索向け構造化データに使われます。</p>
+              </div>
+              <button class="add-button" type="button" data-action="add-faq">FAQを追加</button>
+            </div>
+            <div class="item-stack">${items || '<p class="empty-note">FAQがありません。</p>'}</div>
+          </section>
+        `;
+      }
+
+      function renderForm(key, data) {
+        if (key === "banner") return renderBanner(data);
+        if (key === "docs") return renderDocs(data);
+        if (key === "interviews") return renderInterviews(data);
+        if (key === "logos") return renderLogos(data);
+        if (key === "faqs") return renderFaqs(data);
+        return '<p class="empty-note">編集対象が見つかりません。</p>';
+      }
+
       function renderEditor() {
         const file = files.find((item) => item.key === state.activeKey);
         const record = state.records[state.activeKey];
@@ -560,19 +1009,22 @@
           return;
         }
 
+        const draft = currentDraft();
         emptyState.classList.add("is-hidden");
         editorPanel.classList.remove("is-hidden");
         $("editorTitle").textContent = file.title;
         $("editorDescription").textContent = file.description;
         $("editorPath").textContent = record.path;
         $("editorSha").textContent = `commit: ${record.sha.slice(0, 10)}`;
-        editorText.value = pretty(record.data);
+        formHost.innerHTML = renderForm(state.activeKey, draft);
+        editorText.value = pretty(draft);
         setStatus(editorStatus, "");
       }
 
       async function loadOne(key) {
         const payload = await requestContent(key);
         state.records[key] = payload;
+        state.drafts[key] = clone(payload.data);
         renderTabs();
         renderEditor();
       }
@@ -611,6 +1063,72 @@
         }
       }
 
+      function setByPath(target, path, value) {
+        const parts = path.split(".");
+        let cursor = target;
+        for (let index = 0; index < parts.length - 1; index += 1) {
+          cursor = cursor[parts[index]];
+        }
+        cursor[parts[parts.length - 1]] = value;
+      }
+
+      function onFormChange(event) {
+        const field = event.target.closest("[data-path]");
+        if (!field) return;
+        const draft = currentDraft();
+        setByPath(draft, field.dataset.path, field.type === "checkbox" ? field.checked : field.value);
+        editorText.value = pretty(draft);
+        renderTabs();
+        setStatus(editorStatus, "未保存の変更があります。");
+      }
+
+      function templateFor(action) {
+        if (action === "add-doc") {
+          return { title: "", description: "", file: "docs/", date: "", available: true };
+        }
+        if (action === "add-interview") {
+          return { sample: true, org: "", scale: "", role: "導入ご担当者", avatar: "product/", qa: [{ q: "", a: "" }] };
+        }
+        if (action === "add-logo") return { file: "", name: "", pending: true };
+        if (action === "add-faq") return { q: "", a: "" };
+        if (action === "add-qa") return { q: "", a: "" };
+        return {};
+      }
+
+      function removeAt(list, index, label) {
+        if (!confirm(`${label}を削除しますか？`)) return false;
+        list.splice(index, 1);
+        return true;
+      }
+
+      function onFormAction(event) {
+        const button = event.target.closest("[data-action]");
+        if (!button) return;
+        const draft = currentDraft();
+        const action = button.dataset.action;
+        const index = Number(button.dataset.index);
+        const qaIndex = Number(button.dataset.qaIndex);
+        let changed = true;
+
+        if (action === "add-doc") draft.push(templateFor(action));
+        else if (action === "remove-doc") changed = removeAt(draft, index, "資料");
+        else if (action === "add-interview") draft.push(templateFor(action));
+        else if (action === "remove-interview") changed = removeAt(draft, index, "インタビュー");
+        else if (action === "add-logo") draft.push(templateFor(action));
+        else if (action === "remove-logo") changed = removeAt(draft, index, "ロゴ");
+        else if (action === "add-faq") draft.push(templateFor(action));
+        else if (action === "remove-faq") changed = removeAt(draft, index, "FAQ");
+        else if (action === "add-qa") draft[index].qa.push(templateFor(action));
+        else if (action === "remove-qa") changed = removeAt(draft[index].qa, qaIndex, "Q&A");
+        else changed = false;
+
+        if (changed) {
+          renderTabs();
+          renderEditor();
+          setStatus(editorStatus, "未保存の変更があります。");
+        }
+      }
+
       function parseEditor() {
         try {
           return JSON.parse(editorText.value);
@@ -619,13 +1137,74 @@
         }
       }
 
+      function validateDraft(key, draft) {
+        const data = clean(draft);
+        const errors = [];
+        const need = (value, message) => {
+          if (!String(value ?? "").trim()) errors.push(message);
+        };
+
+        if (key === "banner") {
+          if (data.enabled) {
+            need(data.image, "バナー画像パスを入力してください");
+            need(data.alt, "バナー代替テキストを入力してください");
+            need(data.link, "バナーリンク先を入力してください");
+          }
+        }
+
+        if (key === "docs") {
+          if (!Array.isArray(data) || data.length === 0) errors.push("資料を1件以上登録してください");
+          data.forEach((item, index) => {
+            need(item.title, `資料${index + 1}のタイトルを入力してください`);
+            need(item.description, `資料${index + 1}の説明文を入力してください`);
+            if (item.available) need(item.file, `資料${index + 1}のPDFパスを入力してください`);
+          });
+        }
+
+        if (key === "interviews") {
+          if (!Array.isArray(data) || data.length === 0) errors.push("インタビューを1件以上登録してください");
+          data.forEach((item, index) => {
+            need(item.org, `インタビュー${index + 1}の会社・業界名を入力してください`);
+            need(item.scale, `インタビュー${index + 1}の規模を入力してください`);
+            need(item.role, `インタビュー${index + 1}の役職・立場を入力してください`);
+            need(item.avatar, `インタビュー${index + 1}の画像パスを入力してください`);
+            if (!Array.isArray(item.qa) || item.qa.length === 0) errors.push(`インタビュー${index + 1}のQ&Aを1件以上登録してください`);
+            (item.qa || []).forEach((qa, qaIndex) => {
+              need(qa.q, `インタビュー${index + 1} Q&A${qaIndex + 1}の質問を入力してください`);
+              need(qa.a, `インタビュー${index + 1} Q&A${qaIndex + 1}の回答を入力してください`);
+            });
+          });
+        }
+
+        if (key === "logos") {
+          if (!Array.isArray(data) || data.length === 0) errors.push("ロゴを1件以上登録してください");
+          data.forEach((item, index) => {
+            need(item.name, `ロゴ${index + 1}の会社名を入力してください`);
+            need(item.file, `ロゴ${index + 1}のファイル名を入力してください`);
+          });
+        }
+
+        if (key === "faqs") {
+          if (!Array.isArray(data) || data.length === 0) errors.push("FAQを1件以上登録してください");
+          data.forEach((item, index) => {
+            need(item.q, `FAQ${index + 1}の質問を入力してください`);
+            need(item.a, `FAQ${index + 1}の回答を入力してください`);
+          });
+        }
+
+        if (errors.length > 0) {
+          throw new Error(errors.slice(0, 4).join(" / "));
+        }
+        return data;
+      }
+
       async function saveActive() {
         const key = state.activeKey;
         const file = files.find((item) => item.key === key);
         let data;
 
         try {
-          data = parseEditor();
+          data = validateDraft(key, currentDraft());
         } catch (error) {
           setStatus(editorStatus, error.message, "danger");
           return;
@@ -644,6 +1223,7 @@
             },
           });
           state.records[key] = payload;
+          state.drafts[key] = clone(payload.data);
           renderTabs();
           renderEditor();
           setStatus(editorStatus, "保存しました。本番反映が始まります。", "ok");
@@ -654,13 +1234,22 @@
         }
       }
 
-      function formatActive() {
+      function applyJsonToForm() {
         try {
-          editorText.value = pretty(parseEditor());
-          setStatus(editorStatus, "整えました。", "ok");
+          state.drafts[state.activeKey] = parseEditor();
+          renderTabs();
+          renderEditor();
+          setStatus(editorStatus, "JSONをフォームへ反映しました。", "ok");
         } catch (error) {
           setStatus(editorStatus, error.message, "danger");
         }
+      }
+
+      function resetActive() {
+        state.drafts[state.activeKey] = clone(state.records[state.activeKey].data);
+        renderTabs();
+        renderEditor();
+        setStatus(editorStatus, "保存前の状態に戻しました。", "ok");
       }
 
       async function reloadActive() {
@@ -681,8 +1270,12 @@
         if (event.key === "Enter") connect();
       });
       $("saveButton").addEventListener("click", saveActive);
-      $("formatButton").addEventListener("click", formatActive);
+      $("resetButton").addEventListener("click", resetActive);
       $("reloadButton").addEventListener("click", reloadActive);
+      $("applyJsonButton").addEventListener("click", applyJsonToForm);
+      formHost.addEventListener("input", onFormChange);
+      formHost.addEventListener("change", onFormChange);
+      formHost.addEventListener("click", onFormAction);
 
       if (state.password) {
         connect();
