@@ -156,7 +156,8 @@ section {
 }
 
 .logos {
-  padding: 56px 0;
+  /* 見出し除去後はロゴ帯として詰める（導入効果の直下に自然に流れる白帯） */
+  padding: 36px 0;
 }
 
 .sec-head {
@@ -2432,6 +2433,11 @@ section {
   .faq,
   .contact {
     padding: 48px 0;
+  }
+
+  /* SP: 見出し除去後のロゴ帯は詰める */
+  .logos {
+    padding: 28px 0;
   }
 
   .iv-sample-note {
