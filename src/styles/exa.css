@@ -2493,15 +2493,23 @@ section {
     align-self: start;
   }
 
-  /* 上段の画像フレームは詰めて小型化（崩れ防止・右上の存在感優先） */
+  /* SPでは白いカード枠を外し、デバイス素材を青背景へ自然に載せる */
   .hero-visual .frame {
-    padding: 8px;
-    border-radius: 12px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
   }
 
-  /* 狭い列でスクリムが溢れないよう抑える */
   .hero-visual .frame::before {
-    inset: -14px;
+    content: none;
+  }
+
+  .hero-visual .frame img {
+    filter: drop-shadow(0 14px 24px rgba(8, 32, 74, 0.28));
+    transform: scale(1.08) translateY(2px);
+    transform-origin: center;
   }
 
   /* 58%列に収めるため h1主見出しを1段縮小（フォントは犠牲にしすぎない） */
