@@ -2,28 +2,13 @@
 
 ## 基本運用
 
-ブラウザ上で直接保存するCMSは使いません。
+管理ページからデータを更新できます。
 
-更新したい内容は、次のページからメールで送ります。
+- 管理ページ: <https://sellpro-lp.vercel.app/admin/>
 
-- 更新依頼ページ: <https://sellpro-lp.vercel.app/admin/>
-
-このページはサイトを直接書き換えません。
-依頼内容を確認してから、ローカルでJSONや画像を更新し、通常のデプロイ手順で反映します。
-
----
-
-## 反映手順
-
-```bash
-cd ~/projects/clients/sellpro/site
-npm run build
-git add src/data public
-git commit -m "Update SellPro content"
-git push origin main
-```
-
-`main` にpushすると GitHub Actions 経由でVercel本番へ反映されます。
+管理ページでは GitHub の接続情報やトークンを入力しません。
+管理パスワードで開き、保存するとGitHubのJSONファイルへ自動コミットされます。
+`main` にコミットされると GitHub Actions 経由でVercel本番へ反映されます。
 
 ---
 
@@ -36,6 +21,26 @@ git push origin main
 | 導入インタビュー | `src/data/interviews.json` | `public/product/` |
 | 導入企業ロゴ一覧 | `src/data/logos.json` | `public/logos/` |
 | FAQ | `src/data/faqs.json` | なし |
+
+画像やPDFの新規追加は、先にリポジトリへファイルを追加してからJSONで参照します。
+既存ファイルを使う更新は管理ページだけで反映できます。
+
+---
+
+## サーバー設定
+
+管理ページの保存機能には、Vercel本番環境変数が必要です。
+
+| 変数名 | 用途 |
+| --- | --- |
+| `SELLPRO_ADMIN_PASSWORD` | 管理ページのパスワード |
+| `GITHUB_CONTENT_TOKEN` | GitHub Contents APIでJSONを更新するサーバー側トークン |
+| `GITHUB_OWNER` | 省略可。既定値 `kaitonakamura0731-cell` |
+| `GITHUB_REPO` | 省略可。既定値 `sellpro-lp` |
+| `GITHUB_BRANCH` | 省略可。既定値 `main` |
+
+`GITHUB_CONTENT_TOKEN` はブラウザには出ません。
+権限は対象リポジトリのContents読み書きだけに絞るのが理想です。
 
 ---
 
@@ -142,8 +147,17 @@ git push origin main
 
 ---
 
+## ローカルでの確認
+
+```bash
+cd ~/projects/clients/sellpro/site
+npm run build
+git push origin main
+```
+
+---
+
 ## 注意
 
-- JSONのカンマ抜け、括弧の閉じ忘れがあるとビルドが失敗します。
-- 編集後は必ず `npm run build` を実行します。
+- JSONのカンマ抜け、括弧の閉じ忘れがあると保存やビルドが失敗します。
 - `ATLAS` や `双日` の表記は入れないでください。

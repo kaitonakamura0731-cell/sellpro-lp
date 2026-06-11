@@ -1,6 +1,6 @@
 ---
-// SellPro 更新依頼ページ
-// GitHub 接続や外部DBを使わず、変更内容をメールで送るだけの静的ページ。
+// SellPro 管理ページ
+// GitHub トークンはブラウザに持たせず、/api/admin-content 経由でサーバー側から更新する。
 ---
 
 <!doctype html>
@@ -9,63 +9,68 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
-    <title>SellPro 更新依頼</title>
+    <title>SellPro 管理ページ</title>
     <style>
       :root {
         --blue: #1c6fd2;
-        --blue-dark: #155bb0;
+        --blue-dark: #1358ac;
         --blue-soft: #eaf2fc;
-        --ink: #18253a;
-        --muted: #66758a;
-        --line: #dbe5f2;
+        --ink: #17243a;
+        --muted: #68778d;
+        --line: #d8e3f1;
         --bg: #f5f8fc;
         --card: #ffffff;
-        --radius: 14px;
+        --danger: #c33a2b;
+        --ok: #147a4b;
+        --radius: 12px;
       }
 
       * { box-sizing: border-box; }
       html, body { margin: 0; padding: 0; }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
-          "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+        min-width: 320px;
         background: var(--bg);
         color: var(--ink);
-        line-height: 1.7;
+        font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+          "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
         font-size: 15px;
+        line-height: 1.7;
         -webkit-font-smoothing: antialiased;
       }
 
       a { color: inherit; }
 
       .wrap {
-        max-width: 760px;
+        width: min(1080px, 100%);
         margin: 0 auto;
-        padding: 28px 18px 80px;
+        padding: 28px 18px 72px;
       }
 
       .header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
+        gap: 18px;
+        margin-bottom: 22px;
         padding-bottom: 18px;
         border-bottom: 1px solid var(--line);
-        margin-bottom: 22px;
       }
 
       .brand {
         display: flex;
         align-items: center;
-        gap: 11px;
+        gap: 12px;
+        min-width: 0;
       }
 
       .mark {
-        width: 32px;
-        height: 32px;
-        border-radius: 9px;
+        width: 34px;
+        height: 34px;
+        flex: 0 0 auto;
         display: grid;
         place-items: center;
+        border-radius: 10px;
         background: var(--blue);
         color: #fff;
         font-weight: 800;
@@ -73,8 +78,9 @@
 
       h1 {
         margin: 0;
-        font-size: 20px;
+        font-size: 21px;
         line-height: 1.35;
+        letter-spacing: 0;
       }
 
       .sub {
@@ -84,9 +90,9 @@
 
       .links {
         display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
         justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
       }
 
       .links a,
@@ -96,59 +102,48 @@
         font: inherit;
         font-weight: 700;
         text-decoration: none;
-        cursor: pointer;
       }
 
       .links a {
         padding: 8px 13px;
-        color: var(--blue-dark);
-        background: #fff;
         border-color: var(--line);
+        background: #fff;
+        color: var(--blue-dark);
       }
 
       .card {
         background: var(--card);
         border: 1px solid var(--line);
         border-radius: var(--radius);
-        padding: 22px;
         box-shadow: 0 18px 44px rgba(22, 51, 95, .08);
       }
 
+      .login {
+        max-width: 620px;
+        padding: 22px;
+      }
+
+      .login h2,
+      .editor-head h2 {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.45;
+      }
+
       .lead {
-        margin: 0 0 18px;
+        margin: 7px 0 18px;
         color: var(--muted);
-      }
-
-      .notice {
-        margin: 0 0 20px;
-        padding: 12px 14px;
-        border-radius: 10px;
-        background: var(--blue-soft);
-        color: var(--blue-dark);
-        font-weight: 700;
         font-size: 13px;
-      }
-
-      form {
-        display: grid;
-        gap: 16px;
-      }
-
-      .grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
       }
 
       label {
         display: grid;
-        gap: 6px;
+        gap: 7px;
         font-weight: 700;
         font-size: 13px;
       }
 
       input,
-      select,
       textarea {
         width: 100%;
         border: 1px solid #c9d5e4;
@@ -161,65 +156,232 @@
       }
 
       textarea {
-        min-height: 180px;
+        min-height: 500px;
         resize: vertical;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        font-size: 13px;
+        line-height: 1.65;
       }
 
       input:focus,
-      select:focus,
       textarea:focus {
         border-color: var(--blue);
         box-shadow: 0 0 0 3px rgba(28, 111, 210, .14);
       }
 
-      .hint {
-        color: var(--muted);
-        font-size: 12px;
-        font-weight: 400;
+      button {
+        appearance: none;
+        -webkit-appearance: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 10px 18px;
+        color: #fff;
+        background: var(--blue);
+        cursor: pointer;
+        box-shadow: 0 10px 24px rgba(28, 111, 210, .2);
+      }
+
+      button:hover { background: var(--blue-dark); }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: .58;
+        box-shadow: none;
+      }
+
+      .ghost {
+        border-color: var(--line);
+        background: #fff;
+        color: var(--blue-dark);
+        box-shadow: none;
+      }
+
+      .ghost:hover {
+        background: var(--blue-soft);
+      }
+
+      .danger {
+        color: var(--danger);
+      }
+
+      .ok {
+        color: var(--ok);
       }
 
       .actions {
         display: flex;
-        align-items: center;
-        gap: 12px;
         flex-wrap: wrap;
-        padding-top: 4px;
+        gap: 10px;
+        align-items: center;
+        margin-top: 16px;
       }
 
-      button {
-        padding: 12px 22px;
-        color: #fff;
-        background: var(--blue);
-        box-shadow: 0 10px 24px rgba(28, 111, 210, .24);
-      }
-
-      button:hover { background: var(--blue-dark); }
-
-      .mailto {
-        color: var(--muted);
-        font-size: 12.5px;
-      }
-
-      .quick {
-        margin-top: 18px;
-        display: grid;
-        gap: 8px;
+      .status {
+        min-height: 22px;
         color: var(--muted);
         font-size: 13px;
+        font-weight: 700;
       }
 
-      .quick b { color: var(--ink); }
+      .workspace {
+        display: none;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 18px;
+      }
 
-      @media (max-width: 640px) {
-        .wrap { padding-top: 18px; }
+      .workspace.is-ready {
+        display: grid;
+      }
+
+      .side {
+        padding: 12px;
+        align-self: start;
+      }
+
+      .file-tabs {
+        display: grid;
+        gap: 8px;
+      }
+
+      :global(.tab) {
+        width: 100%;
+        appearance: none;
+        -webkit-appearance: none;
+        display: inline-flex;
+        min-height: auto;
+        justify-content: flex-start;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        padding: 11px 12px;
+        background: transparent;
+        color: var(--ink);
+        font: inherit;
+        font-weight: 700;
+        box-shadow: none;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      :global(.tab:hover),
+      :global(.tab.is-active) {
+        background: var(--blue-soft);
+        color: var(--blue-dark);
+      }
+
+      :global(.tab-title) {
+        display: block;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      :global(.tab-sub) {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 11.5px;
+        font-weight: 600;
+        line-height: 1.35;
+      }
+
+      .editor {
+        min-width: 0;
+        padding: 20px;
+      }
+
+      .editor-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+
+      .pill {
+        flex: 0 0 auto;
+        max-width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: #fff;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+
+      .meta {
+        display: grid;
+        gap: 4px;
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .empty {
+        padding: 24px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .is-hidden { display: none !important; }
+
+      @media (max-width: 760px) {
+        .wrap { padding: 18px 14px 56px; }
+
         .header {
           align-items: flex-start;
           flex-direction: column;
         }
-        .links { justify-content: flex-start; }
-        .card { padding: 18px; }
-        .grid { grid-template-columns: 1fr; }
-        button { width: 100%; }
+
+        .links {
+          justify-content: flex-start;
+        }
+
+        .login,
+        .editor {
+          padding: 18px;
+        }
+
+        .workspace.is-ready {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+
+        .side {
+          position: static;
+        }
+
+        .file-tabs {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .editor-head {
+          flex-direction: column;
+        }
+
+        textarea {
+          min-height: 420px;
+          font-size: 12.5px;
+        }
+
+        button {
+          flex: 1 1 150px;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .file-tabs {
+          grid-template-columns: 1fr;
+        }
+
+        .links a,
+        button {
+          width: 100%;
+        }
       }
     </style>
   </head>
@@ -229,8 +391,8 @@
         <div class="brand">
           <div class="mark">S</div>
           <div>
-            <h1>SellPro 更新依頼</h1>
-            <div class="sub">シンプル更新依頼ページ</div>
+            <h1>SellPro 管理ページ</h1>
+            <div class="sub">本番コンテンツ更新</div>
           </div>
         </div>
         <nav class="links" aria-label="関連リンク">
@@ -240,102 +402,291 @@
         </nav>
       </header>
 
-      <main class="card">
+      <section class="card login" id="loginCard">
+        <h2>管理パスワード</h2>
         <p class="lead">
-          バナー、資料、インタビュー、ロゴ、FAQの更新内容をここでまとめて送れます。
+          パスワードを入れるだけで、更新データを開けます。保存後は本番反映まで自動で進みます。
         </p>
-        <p class="notice">
-          このページはサイトを直接書き換えません。送信内容を確認してから反映します。
-        </p>
-
-        <form id="requestForm">
-          <div class="grid">
-            <label>
-              お名前
-              <input name="name" autocomplete="name" />
-            </label>
-            <label>
-              会社名
-              <input name="company" autocomplete="organization" />
-            </label>
-          </div>
-
-          <div class="grid">
-            <label>
-              メールアドレス
-              <input name="email" type="email" autocomplete="email" />
-            </label>
-            <label>
-              更新したい箇所
-              <select name="area">
-                <option value="バナー">バナー</option>
-                <option value="資料">資料</option>
-                <option value="導入インタビュー">導入インタビュー</option>
-                <option value="ロゴ">ロゴ</option>
-                <option value="FAQ">FAQ</option>
-                <option value="その他">その他</option>
-              </select>
-            </label>
-          </div>
-
-          <label>
-            更新内容
-            <textarea
-              name="detail"
-              required
-              placeholder="例: FAQの1問目を差し替えたい / ロゴの確認中を外したい / バナー画像とリンクを変更したい"
-            ></textarea>
-            <span class="hint">画像やPDFは、共有URLを貼るか、このメールへの返信で添付してください。</span>
-          </label>
-
-          <label>
-            素材URL・参考URL
-            <input name="assetUrl" type="url" placeholder="https://..." />
-          </label>
-
-          <div class="actions">
-            <button type="submit">更新依頼をメールで送る</button>
-            <span class="mailto">送信先: geriru0099@gmail.com</span>
-          </div>
-        </form>
-
-        <div class="quick">
-          <div><b>急ぎの時:</b> 変更したい箇所のスクショと差し替え文面だけ送れば対応できます。</div>
-          <div><b>素材がある時:</b> 画像・PDF・ロゴはメール返信で添付してもOKです。</div>
+        <label>
+          パスワード
+          <input
+            id="passwordInput"
+            type="password"
+            autocomplete="current-password"
+            placeholder="管理パスワードを入力"
+          />
+        </label>
+        <div class="actions">
+          <button id="connectButton" type="button">開く</button>
+          <span class="status" id="loginStatus"></span>
         </div>
+      </section>
+
+      <main class="workspace" id="workspace">
+        <aside class="card side" aria-label="編集対象">
+          <div class="file-tabs" id="fileTabs"></div>
+        </aside>
+
+        <section class="card editor">
+          <div id="emptyState" class="empty">読み込み中です。</div>
+          <div id="editorPanel" class="is-hidden">
+            <div class="editor-head">
+              <div>
+                <h2 id="editorTitle"></h2>
+                <div class="lead" id="editorDescription"></div>
+              </div>
+              <div class="pill" id="editorPath"></div>
+            </div>
+            <div class="meta">
+              <span id="editorSha">commit: -</span>
+              <span>保存後、数分で本番ページに反映されます。</span>
+            </div>
+            <textarea id="editorText" spellcheck="false"></textarea>
+            <div class="actions">
+              <button id="saveButton" type="button">保存する</button>
+              <button id="formatButton" class="ghost" type="button">整える</button>
+              <button id="reloadButton" class="ghost" type="button">再読み込み</button>
+              <span class="status" id="editorStatus"></span>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
 
-    <script is:inline>
-      (function () {
-        var form = document.getElementById("requestForm");
-        if (!form) return;
+    <script>
+      const files = [
+        {
+          key: "banner",
+          title: "バナー",
+          description: "常時表示バナーのON/OFF、画像、リンク",
+        },
+        {
+          key: "docs",
+          title: "資料",
+          description: "資料一覧ページのPDF・準備中表示",
+        },
+        {
+          key: "interviews",
+          title: "インタビュー",
+          description: "導入インタビューの会社情報・Q&A",
+        },
+        {
+          key: "logos",
+          title: "ロゴ",
+          description: "導入企業ロゴと確認中バッジ",
+        },
+        {
+          key: "faqs",
+          title: "FAQ",
+          description: "トップページFAQと構造化データ",
+        },
+      ];
 
-        form.addEventListener("submit", function (event) {
-          event.preventDefault();
-          var data = new FormData(form);
-          var area = data.get("area") || "更新依頼";
-          var subject = "SellProサイト更新依頼: " + area;
-          var body = [
-            "SellProサイト更新依頼",
-            "",
-            "お名前: " + (data.get("name") || ""),
-            "会社名: " + (data.get("company") || ""),
-            "メールアドレス: " + (data.get("email") || ""),
-            "更新したい箇所: " + area,
-            "素材URL・参考URL: " + (data.get("assetUrl") || ""),
-            "",
-            "更新内容:",
-            data.get("detail") || "",
-          ].join("\n");
+      const state = {
+        password: sessionStorage.getItem("sellproAdminPassword") || "",
+        activeKey: files[0].key,
+        records: {},
+      };
 
-          window.location.href =
-            "mailto:geriru0099@gmail.com?subject=" +
-            encodeURIComponent(subject) +
-            "&body=" +
-            encodeURIComponent(body);
+      const $ = (id) => document.getElementById(id);
+
+      const loginCard = $("loginCard");
+      const workspace = $("workspace");
+      const fileTabs = $("fileTabs");
+      const loginStatus = $("loginStatus");
+      const editorStatus = $("editorStatus");
+      const emptyState = $("emptyState");
+      const editorPanel = $("editorPanel");
+      const editorText = $("editorText");
+
+      $("passwordInput").value = state.password;
+
+      function setStatus(target, message, type = "") {
+        target.textContent = message || "";
+        target.classList.toggle("danger", type === "danger");
+        target.classList.toggle("ok", type === "ok");
+      }
+
+      function pretty(value) {
+        return JSON.stringify(value, null, 2) + "\n";
+      }
+
+      async function requestContent(key, options = {}) {
+        const response = await fetch(`/api/admin-content?key=${encodeURIComponent(key)}`, {
+          method: options.method || "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Password": state.password,
+          },
+          body: options.body ? JSON.stringify(options.body) : undefined,
         });
-      })();
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.error || "通信に失敗しました。");
+        }
+        return payload;
+      }
+
+      function renderTabs() {
+        fileTabs.innerHTML = files.map((file) => {
+          const record = state.records[file.key];
+          const status = record ? "読み込み済み" : "未読込";
+          return `
+            <button class="tab ${file.key === state.activeKey ? "is-active" : ""}" type="button" data-key="${file.key}">
+              <span class="tab-title">${file.title}</span>
+              <span class="tab-sub">${status}</span>
+            </button>
+          `;
+        }).join("");
+
+        fileTabs.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            state.activeKey = button.dataset.key;
+            renderTabs();
+            renderEditor();
+          });
+        });
+      }
+
+      function renderEditor() {
+        const file = files.find((item) => item.key === state.activeKey);
+        const record = state.records[state.activeKey];
+
+        if (!record) {
+          emptyState.classList.remove("is-hidden");
+          editorPanel.classList.add("is-hidden");
+          emptyState.textContent = `${file.title}を読み込んでいます。`;
+          return;
+        }
+
+        emptyState.classList.add("is-hidden");
+        editorPanel.classList.remove("is-hidden");
+        $("editorTitle").textContent = file.title;
+        $("editorDescription").textContent = file.description;
+        $("editorPath").textContent = record.path;
+        $("editorSha").textContent = `commit: ${record.sha.slice(0, 10)}`;
+        editorText.value = pretty(record.data);
+        setStatus(editorStatus, "");
+      }
+
+      async function loadOne(key) {
+        const payload = await requestContent(key);
+        state.records[key] = payload;
+        renderTabs();
+        renderEditor();
+      }
+
+      async function loadAll() {
+        loginCard.classList.add("is-hidden");
+        workspace.classList.add("is-ready");
+        renderTabs();
+        renderEditor();
+
+        for (const file of files) {
+          await loadOne(file.key);
+        }
+      }
+
+      async function connect() {
+        state.password = $("passwordInput").value.trim();
+        if (!state.password) {
+          setStatus(loginStatus, "パスワードを入力してください。", "danger");
+          return;
+        }
+
+        $("connectButton").disabled = true;
+        setStatus(loginStatus, "確認しています。");
+
+        try {
+          sessionStorage.setItem("sellproAdminPassword", state.password);
+          await loadAll();
+          setStatus(loginStatus, "");
+        } catch (error) {
+          loginCard.classList.remove("is-hidden");
+          workspace.classList.remove("is-ready");
+          setStatus(loginStatus, error.message, "danger");
+        } finally {
+          $("connectButton").disabled = false;
+        }
+      }
+
+      function parseEditor() {
+        try {
+          return JSON.parse(editorText.value);
+        } catch (error) {
+          throw new Error(`JSONの形式を確認してください: ${error.message}`);
+        }
+      }
+
+      async function saveActive() {
+        const key = state.activeKey;
+        const file = files.find((item) => item.key === key);
+        let data;
+
+        try {
+          data = parseEditor();
+        } catch (error) {
+          setStatus(editorStatus, error.message, "danger");
+          return;
+        }
+
+        $("saveButton").disabled = true;
+        setStatus(editorStatus, "保存しています。");
+
+        try {
+          const payload = await requestContent(key, {
+            method: "POST",
+            body: {
+              data,
+              sha: state.records[key]?.sha,
+              message: `Update SellPro ${file.key} content`,
+            },
+          });
+          state.records[key] = payload;
+          renderTabs();
+          renderEditor();
+          setStatus(editorStatus, "保存しました。本番反映が始まります。", "ok");
+        } catch (error) {
+          setStatus(editorStatus, error.message, "danger");
+        } finally {
+          $("saveButton").disabled = false;
+        }
+      }
+
+      function formatActive() {
+        try {
+          editorText.value = pretty(parseEditor());
+          setStatus(editorStatus, "整えました。", "ok");
+        } catch (error) {
+          setStatus(editorStatus, error.message, "danger");
+        }
+      }
+
+      async function reloadActive() {
+        $("reloadButton").disabled = true;
+        setStatus(editorStatus, "再読み込みしています。");
+        try {
+          await loadOne(state.activeKey);
+          setStatus(editorStatus, "再読み込みしました。", "ok");
+        } catch (error) {
+          setStatus(editorStatus, error.message, "danger");
+        } finally {
+          $("reloadButton").disabled = false;
+        }
+      }
+
+      $("connectButton").addEventListener("click", connect);
+      $("passwordInput").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") connect();
+      });
+      $("saveButton").addEventListener("click", saveActive);
+      $("formatButton").addEventListener("click", formatActive);
+      $("reloadButton").addEventListener("click", reloadActive);
+
+      if (state.password) {
+        connect();
+      }
     </script>
   </body>
 </html>
