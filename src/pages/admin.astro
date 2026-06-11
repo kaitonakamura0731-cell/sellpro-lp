@@ -1,0 +1,1128 @@
+---
+// SellPro CMS 管理画面 — 完全クライアントサイドSPA
+// GitHub Contents API を直接叩いて src/data/*.json と public/ 配下の画像/PDF を編集する。
+// サイト本体のレイアウト/exa.css は一切importしない独立ページ。
+// データソース: kaitonakamura0731-cell/sellpro-lp (branch: main)
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>SellPro CMS 管理画面</title>
+    <style>
+      :root {
+        --blue: #1c6fd2;
+        --blue-dark: #155bb0;
+        --blue-soft: #eaf2fc;
+        --ink: #1d2433;
+        --muted: #5b6678;
+        --line: #e2e7ef;
+        --bg: #f5f7fa;
+        --ok: #1f9d57;
+        --ok-soft: #e8f6ee;
+        --err: #d0322f;
+        --err-soft: #fdecec;
+        --warn: #b06a00;
+        --warn-soft: #fff5e6;
+        --radius: 10px;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+          "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        line-height: 1.6;
+        font-size: 15px;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px 80px; }
+
+      header.app {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 16px 0;
+        border-bottom: 2px solid var(--line);
+        margin-bottom: 20px;
+      }
+      .brand { display: flex; align-items: center; gap: 10px; }
+      .brand .dot {
+        width: 28px; height: 28px; border-radius: 7px;
+        background: var(--blue); color: #fff; font-weight: 800;
+        display: grid; place-items: center; font-size: 15px;
+      }
+      .brand h1 { font-size: 18px; margin: 0; font-weight: 800; letter-spacing: .01em; }
+      .brand .sub { font-size: 12px; color: var(--muted); }
+
+      .conn-state {
+        display: inline-flex; align-items: center; gap: 7px;
+        font-size: 13px; font-weight: 700;
+        padding: 6px 12px; border-radius: 999px;
+        background: #eef1f5; color: var(--muted);
+      }
+      .conn-state .led { width: 9px; height: 9px; border-radius: 50%; background: #b6bdc9; }
+      .conn-state.on { background: var(--ok-soft); color: var(--ok); }
+      .conn-state.on .led { background: var(--ok); }
+
+      .card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-bottom: 18px;
+      }
+      .card h2 { font-size: 16px; margin: 0 0 4px; font-weight: 800; }
+      .card .hint { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+
+      label.field { display: block; margin-bottom: 14px; }
+      label.field > .lab { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+      label.field > .desc { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 400; }
+
+      input[type="text"], input[type="password"], input[type="url"], textarea, select {
+        width: 100%;
+        font: inherit;
+        color: var(--ink);
+        padding: 10px 12px;
+        border: 1px solid #cfd6e0;
+        border-radius: 8px;
+        background: #fff;
+        outline: none;
+        transition: border-color .12s, box-shadow .12s;
+      }
+      input:focus, textarea:focus, select:focus {
+        border-color: var(--blue);
+        box-shadow: 0 0 0 3px rgba(28,111,210,.15);
+      }
+      textarea { resize: vertical; min-height: 76px; line-height: 1.55; }
+
+      button {
+        font: inherit; font-weight: 700; cursor: pointer;
+        border: 1px solid transparent; border-radius: 8px;
+        padding: 10px 18px; background: var(--blue); color: #fff;
+        transition: background .12s, opacity .12s;
+      }
+      button:hover { background: var(--blue-dark); }
+      button:disabled { opacity: .5; cursor: not-allowed; }
+      button.ghost { background: #fff; color: var(--blue); border-color: #c4d6ee; }
+      button.ghost:hover { background: var(--blue-soft); }
+      button.subtle { background: #eef1f5; color: var(--ink); border-color: #dde2ea; }
+      button.subtle:hover { background: #e3e8ee; }
+      button.danger { background: #fff; color: var(--err); border-color: #f0c2c1; }
+      button.danger:hover { background: var(--err-soft); }
+      button.sm { padding: 6px 12px; font-size: 13px; }
+      button.xs { padding: 4px 9px; font-size: 12px; }
+
+      .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .grow { flex: 1 1 auto; min-width: 0; }
+
+      /* messages */
+      .msg { font-size: 13px; padding: 10px 13px; border-radius: 8px; margin-top: 12px; display: none; }
+      .msg.show { display: block; }
+      .msg.ok { background: var(--ok-soft); color: var(--ok); }
+      .msg.err { background: var(--err-soft); color: var(--err); }
+      .msg.warn { background: var(--warn-soft); color: var(--warn); }
+      .msg a { color: inherit; font-weight: 700; }
+
+      /* toggle */
+      .toggle { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; }
+      .toggle input { position: absolute; opacity: 0; pointer-events: none; }
+      .toggle .track {
+        width: 42px; height: 24px; border-radius: 999px; background: #c9d0db;
+        position: relative; transition: background .15s; flex: none;
+      }
+      .toggle .track::after {
+        content: ""; position: absolute; top: 2px; left: 2px;
+        width: 20px; height: 20px; border-radius: 50%; background: #fff;
+        transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2);
+      }
+      .toggle input:checked + .track { background: var(--blue); }
+      .toggle input:checked + .track::after { transform: translateX(18px); }
+      .toggle .tlab { font-size: 13px; font-weight: 700; }
+      .toggle .tdesc { font-size: 12px; color: var(--muted); font-weight: 400; }
+      .toggle-wrap { margin-bottom: 14px; }
+
+      /* tabs */
+      .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+      .tabs button {
+        background: #fff; color: var(--muted); border: 1px solid var(--line);
+        padding: 8px 14px; font-size: 13.5px;
+      }
+      .tabs button:hover { background: var(--blue-soft); color: var(--blue); }
+      .tabs button.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+      /* item blocks (array editors) */
+      .item {
+        border: 1px solid var(--line); border-radius: 9px;
+        padding: 16px; margin-bottom: 14px; background: #fcfdfe;
+      }
+      .item-head {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 8px; margin-bottom: 12px;
+      }
+      .item-head .idx { font-size: 13px; font-weight: 800; color: var(--blue); }
+      .item-actions { display: flex; gap: 6px; }
+
+      .preview-img {
+        max-width: 100%; max-height: 140px; border-radius: 8px;
+        border: 1px solid var(--line); background: #fff; display: block; margin-bottom: 8px;
+      }
+      .filename { font-size: 12px; color: var(--muted); word-break: break-all; }
+
+      .qa-block { border-left: 3px solid var(--blue-soft); padding-left: 12px; margin-bottom: 10px; }
+      .qa-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+      .qa-head .qlab { font-size: 12px; font-weight: 800; color: var(--muted); }
+
+      .hidden { display: none !important; }
+      .save-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+
+      details.howto { margin-top: 14px; border: 1px solid var(--line); border-radius: 8px; padding: 4px 14px; background: #fafbfc; }
+      details.howto summary { cursor: pointer; font-weight: 700; font-size: 13.5px; padding: 8px 0; color: var(--blue); }
+      details.howto ol { margin: 6px 0 14px; padding-left: 20px; font-size: 13px; color: var(--ink); }
+      details.howto li { margin-bottom: 5px; }
+      details.howto code { background: #eef1f5; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+      details.howto strong { color: var(--blue-dark); }
+
+      .file-input-wrap { margin-top: 8px; }
+      input[type="file"] { font-size: 13px; }
+
+      .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: sp .7s linear infinite; vertical-align: -2px; }
+      @keyframes sp { to { transform: rotate(360deg); } }
+
+      .small-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="app">
+        <div class="brand">
+          <div class="dot">S</div>
+          <div>
+            <h1>SellPro CMS</h1>
+            <div class="sub">コンテンツ管理画面</div>
+          </div>
+        </div>
+        <div id="connState" class="conn-state"><span class="led"></span><span id="connLabel">未接続</span></div>
+      </header>
+
+      <!-- 接続パネル -->
+      <section id="connPanel" class="card">
+        <h2>GitHub に接続</h2>
+        <p class="hint">編集にはアクセストークン（PAT）が必要です。下のボタンから作成し、貼り付けて接続してください。</p>
+        <label class="field">
+          <span class="lab">アクセストークン（Fine-grained PAT）</span>
+          <input type="password" id="patInput" autocomplete="off" placeholder="github_pat_..." />
+        </label>
+        <div class="row">
+          <button id="connectBtn">接続</button>
+          <button id="logoutBtn" class="subtle hidden">ログアウト</button>
+        </div>
+        <div id="connMsg" class="msg"></div>
+
+        <details class="howto">
+          <summary>トークンの作り方（はじめての方はこちら）</summary>
+          <ol>
+            <li>GitHub にログイン → 右上アイコン → <strong>Settings</strong></li>
+            <li>左メニュー最下部 <strong>Developer settings</strong></li>
+            <li><strong>Personal access tokens</strong> → <strong>Fine-grained personal access tokens</strong></li>
+            <li><strong>Generate new token</strong> をクリック</li>
+            <li><strong>Repository access</strong> で「<strong>Only select repositories</strong>」を選び、<code>sellpro-lp</code> を選択</li>
+            <li><strong>Permissions</strong> → <strong>Repository permissions</strong> → <strong>Contents</strong> を「<strong>Read and write</strong>」に設定</li>
+            <li><strong>Generate token</strong> でトークンを生成し、表示された <code>github_pat_...</code> をコピー</li>
+            <li>このページの入力欄に貼り付けて「接続」を押す</li>
+          </ol>
+          <p class="small-note">※ トークンはこのブラウザ（localStorage）にのみ保存され、外部には送信されません。GitHub 以外への通信は行いません。</p>
+        </details>
+      </section>
+
+      <!-- エディタ本体 -->
+      <main id="editorRoot" class="hidden">
+        <div class="tabs" id="tabs">
+          <button data-tab="banner" class="active">バナー</button>
+          <button data-tab="docs">資料一覧</button>
+          <button data-tab="interviews">インタビュー</button>
+          <button data-tab="logos">ロゴ</button>
+          <button data-tab="faqs">FAQ</button>
+        </div>
+
+        <!-- バナー -->
+        <section class="card tabpane" data-pane="banner">
+          <h2>常時表示バナー</h2>
+          <p class="hint">画面右下に固定表示される告知カードです。</p>
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="b_enabled" />
+              <span class="track"></span>
+              <span><span class="tlab">バナーを表示</span></span>
+            </label>
+          </div>
+          <label class="field">
+            <span class="lab">バナー画像</span>
+          </label>
+          <img id="b_preview" class="preview-img hidden" alt="" />
+          <div class="filename" id="b_filename"></div>
+          <div class="file-input-wrap">
+            <input type="file" id="b_imageFile" accept="image/jpeg,image/png,image/webp,image/svg+xml" />
+            <p class="small-note">jpg / png / webp / svg。選択すると <code>public/banner/</code> にアップロードされます。</p>
+          </div>
+          <label class="field" style="margin-top:14px;">
+            <span class="lab">代替テキスト（alt）</span>
+            <input type="text" id="b_alt" />
+            <span class="desc">画像が表示されないときや読み上げ用の説明文。</span>
+          </label>
+          <label class="field">
+            <span class="lab">リンク先URL</span>
+            <input type="url" id="b_link" />
+          </label>
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="b_newTab" />
+              <span class="track"></span>
+              <span><span class="tlab">別タブで開く</span></span>
+            </label>
+          </div>
+          <div class="save-bar">
+            <button class="saveBtn" data-key="banner">保存</button>
+          </div>
+          <div class="msg saveMsg" data-msg="banner"></div>
+        </section>
+
+        <!-- 資料一覧 -->
+        <section class="card tabpane hidden" data-pane="docs">
+          <h2>資料一覧</h2>
+          <p class="hint"><code>/docs/</code> ページに並ぶダウンロード資料です。</p>
+          <div id="docsList"></div>
+          <button class="ghost sm" id="docsAdd">＋ 資料を追加</button>
+          <div class="save-bar" style="margin-top:14px;">
+            <button class="saveBtn" data-key="docs">保存</button>
+          </div>
+          <div class="msg saveMsg" data-msg="docs"></div>
+        </section>
+
+        <!-- インタビュー -->
+        <section class="card tabpane hidden" data-pane="interviews">
+          <h2>導入インタビュー</h2>
+          <p class="hint">インタビューカードの一覧です。</p>
+          <div id="interviewsList"></div>
+          <button class="ghost sm" id="interviewsAdd">＋ インタビューを追加</button>
+          <div class="save-bar" style="margin-top:14px;">
+            <button class="saveBtn" data-key="interviews">保存</button>
+          </div>
+          <div class="msg saveMsg" data-msg="interviews"></div>
+        </section>
+
+        <!-- ロゴ -->
+        <section class="card tabpane hidden" data-pane="logos">
+          <h2>導入企業ロゴ</h2>
+          <p class="hint">トップページのロゴウォールに表示されるロゴです。</p>
+          <div id="logosList"></div>
+          <button class="ghost sm" id="logosAdd">＋ ロゴを追加</button>
+          <div class="save-bar" style="margin-top:14px;">
+            <button class="saveBtn" data-key="logos">保存</button>
+          </div>
+          <div class="msg saveMsg" data-msg="logos"></div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="card tabpane hidden" data-pane="faqs">
+          <h2>FAQ（よくあるご質問）</h2>
+          <p class="hint">トップページのFAQセクションと検索エンジン向けデータに使われます。</p>
+          <div id="faqsList"></div>
+          <button class="ghost sm" id="faqsAdd">＋ 質問を追加</button>
+          <div class="save-bar" style="margin-top:14px;">
+            <button class="saveBtn" data-key="faqs">保存</button>
+          </div>
+          <div class="msg saveMsg" data-msg="faqs"></div>
+        </section>
+      </main>
+    </div>
+
+    <script is:inline>
+      (function () {
+        "use strict";
+
+        var OWNER = "kaitonakamura0731-cell";
+        var REPO = "sellpro-lp";
+        var BRANCH = "main";
+        var API = "https://api.github.com";
+        var SITE_URL = "https://sellpro-lp.vercel.app";
+        var LS_KEY = "sellpro_admin_pat";
+        var MAX_BYTES = 25 * 1024 * 1024;
+
+        // パス定義
+        var PATHS = {
+          banner: "src/data/banner.json",
+          docs: "src/data/docs.json",
+          interviews: "src/data/interviews.json",
+          logos: "src/data/logos.json",
+          faqs: "src/data/faqs.json",
+        };
+
+        // 状態: 各JSONの現在値とsha
+        var state = {
+          banner: { data: null, sha: null },
+          docs: { data: null, sha: null },
+          interviews: { data: null, sha: null },
+          logos: { data: null, sha: null },
+          faqs: { data: null, sha: null },
+        };
+        var pat = "";
+
+        // ---------- ユーティリティ ----------
+        function $(sel, root) { return (root || document).querySelector(sel); }
+        function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+        function el(tag, attrs, children) {
+          var node = document.createElement(tag);
+          if (attrs) {
+            Object.keys(attrs).forEach(function (k) {
+              if (k === "class") node.className = attrs[k];
+              else if (k === "text") node.textContent = attrs[k];
+              else if (k === "html") node.innerHTML = attrs[k];
+              else if (k.indexOf("on") === 0 && typeof attrs[k] === "function") node.addEventListener(k.slice(2), attrs[k]);
+              else node.setAttribute(k, attrs[k]);
+            });
+          }
+          (children || []).forEach(function (c) { if (c) node.appendChild(c); });
+          return node;
+        }
+
+        // UTF-8安全 base64 デコード
+        function b64ToStr(b64) {
+          var clean = (b64 || "").replace(/\s/g, "");
+          var bin = atob(clean);
+          var bytes = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          return new TextDecoder("utf-8").decode(bytes);
+        }
+        // UTF-8安全 文字列→base64
+        function strToB64(str) {
+          var bytes = new TextEncoder().encode(str);
+          return bytesToB64(bytes);
+        }
+        // バイト列→base64（8KBチャンクでスタック溢れ回避）
+        function bytesToB64(bytes) {
+          var binary = "";
+          var chunk = 0x2000; // 8KB
+          for (var i = 0; i < bytes.length; i += chunk) {
+            var slice = bytes.subarray(i, i + chunk);
+            binary += String.fromCharCode.apply(null, slice);
+          }
+          return btoa(binary);
+        }
+
+        function showMsg(node, type, html) {
+          if (!node) return;
+          node.className = "msg show " + type;
+          node.innerHTML = html;
+        }
+        function clearMsg(node) {
+          if (!node) return;
+          node.className = "msg";
+          node.innerHTML = "";
+        }
+
+        // ---------- GitHub API ----------
+        function ghHeaders() {
+          return {
+            Authorization: "Bearer " + pat,
+            Accept: "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+          };
+        }
+
+        function getContent(path) {
+          var url = API + "/repos/" + OWNER + "/" + REPO + "/contents/" + path + "?ref=" + BRANCH;
+          return fetch(url, { headers: ghHeaders() }).then(function (res) {
+            return { res: res };
+          });
+        }
+
+        // PUT（作成/更新）
+        function putContent(path, contentB64, message, sha) {
+          var url = API + "/repos/" + OWNER + "/" + REPO + "/contents/" + path;
+          var body = {
+            message: message,
+            content: contentB64,
+            branch: BRANCH,
+          };
+          if (sha) body.sha = sha;
+          return fetch(url, {
+            method: "PUT",
+            headers: ghHeaders(),
+            body: JSON.stringify(body),
+          });
+        }
+
+        // 既存ファイルのshaを取得（存在しなければnull）
+        function getSha(path) {
+          return getContent(path).then(function (r) {
+            if (r.res.status === 200) {
+              return r.res.json().then(function (j) { return j.sha; });
+            }
+            return null;
+          });
+        }
+
+        // ---------- 接続 ----------
+        function setConnected(on) {
+          var st = $("#connState");
+          var lab = $("#connLabel");
+          if (on) {
+            st.className = "conn-state on";
+            lab.textContent = "接続中";
+            $("#editorRoot").classList.remove("hidden");
+            $("#logoutBtn").classList.remove("hidden");
+            $("#connectBtn").classList.add("hidden");
+            $("#patInput").disabled = true;
+          } else {
+            st.className = "conn-state";
+            lab.textContent = "未接続";
+            $("#editorRoot").classList.add("hidden");
+            $("#logoutBtn").classList.add("hidden");
+            $("#connectBtn").classList.remove("hidden");
+            $("#patInput").disabled = false;
+          }
+        }
+
+        function connect(token) {
+          var msg = $("#connMsg");
+          clearMsg(msg);
+          $("#connectBtn").disabled = true;
+          var oldPat = pat;
+          pat = token;
+          var url = API + "/repos/" + OWNER + "/" + REPO;
+          return fetch(url, { headers: ghHeaders() })
+            .then(function (res) {
+              if (res.ok) return res.json();
+              if (res.status === 401) throw new Error("401");
+              if (res.status === 404) throw new Error("404");
+              throw new Error("status " + res.status);
+            })
+            .then(function () {
+              try { localStorage.setItem(LS_KEY, token); } catch (e) {}
+              setConnected(true);
+              showMsg(msg, "ok", "接続しました。各タブで編集できます。");
+              return loadAll();
+            })
+            .catch(function (err) {
+              pat = oldPat;
+              if (err.message === "401") {
+                showMsg(msg, "err", "トークンが無効です（401）。コピー漏れや有効期限切れがないか確認してください。");
+              } else if (err.message === "404") {
+                showMsg(msg, "err", "リポジトリにアクセスできません（404）。トークンの権限で sellpro-lp が選ばれ、Contents が Read and write になっているか確認してください。");
+              } else {
+                showMsg(msg, "err", "接続に失敗しました（" + err.message + "）。ネットワークやトークンを確認してください。");
+              }
+            })
+            .then(function () {
+              $("#connectBtn").disabled = false;
+            });
+        }
+
+        function logout() {
+          try { localStorage.removeItem(LS_KEY); } catch (e) {}
+          pat = "";
+          $("#patInput").value = "";
+          setConnected(false);
+          clearMsg($("#connMsg"));
+          showMsg($("#connMsg"), "warn", "ログアウトしました。");
+        }
+
+        // ---------- ロード ----------
+        function loadOne(key) {
+          return getContent(PATHS[key]).then(function (r) {
+            if (!r.res.ok) throw new Error(key + " の読み込みに失敗（" + r.res.status + "）");
+            return r.res.json();
+          }).then(function (j) {
+            state[key].sha = j.sha;
+            state[key].data = JSON.parse(b64ToStr(j.content));
+          });
+        }
+
+        function loadAll() {
+          var keys = Object.keys(PATHS);
+          return Promise.all(keys.map(loadOne)).then(function () {
+            renderBanner();
+            renderDocs();
+            renderInterviews();
+            renderLogos();
+            renderFaqs();
+          }).catch(function (err) {
+            showMsg($("#connMsg"), "err", "データの読み込みでエラー: " + err.message);
+          });
+        }
+
+        // ---------- 画像/ファイルアップロード ----------
+        function validateFile(file, kind) {
+          if (file.size > MAX_BYTES) {
+            return "ファイルが大きすぎます（25MBまで）。";
+          }
+          var name = file.name.toLowerCase();
+          if (kind === "image") {
+            if (!/\.(jpg|jpeg|png|webp|svg)$/.test(name)) return "画像は jpg / png / webp / svg のみ受け付けます。";
+          } else if (kind === "pdf") {
+            if (!/\.pdf$/.test(name)) return "資料は PDF のみ受け付けます。";
+          }
+          return null;
+        }
+
+        function readFileBytes(file) {
+          return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function () { resolve(new Uint8Array(reader.result)); };
+            reader.onerror = function () { reject(new Error("ファイルの読み込みに失敗しました。")); };
+            reader.readAsArrayBuffer(file);
+          });
+        }
+
+        // public配下にアップロード。destDir 例: "public/banner". 返り値はファイル名。
+        function uploadAsset(file, destDir, message, msgNode) {
+          var path = destDir + "/" + file.name;
+          return readFileBytes(file).then(function (bytes) {
+            var b64 = bytesToB64(bytes);
+            // 同名が既存ならshaを取って上書き
+            return getSha(path).then(function (sha) {
+              return putContent(path, b64, message, sha);
+            });
+          }).then(function (res) {
+            if (res.ok) return res.json();
+            return res.json().then(function (j) {
+              throw new Error((j && j.message) || ("アップロード失敗 " + res.status));
+            });
+          });
+        }
+
+        // ---------- 保存（JSON） ----------
+        function saveJson(key, message, msgNode) {
+          var json = JSON.stringify(state[key].data, null, 2) + "\n";
+          var b64 = strToB64(json);
+          return putContent(PATHS[key], b64, message, state[key].sha).then(function (res) {
+            if (res.ok) {
+              return res.json().then(function (j) {
+                state[key].sha = j.content.sha;
+                return j;
+              });
+            }
+            if (res.status === 409 || res.status === 422) {
+              throw new Error("CONFLICT");
+            }
+            return res.json().then(function (j) {
+              throw new Error((j && j.message) || ("保存失敗 " + res.status));
+            });
+          });
+        }
+
+        function savedHtml(commit) {
+          var link = commit && commit.commit && commit.commit.html_url
+            ? commit.commit.html_url
+            : (commit && commit.html_url) || "";
+          var base = "✅ 保存しました。1〜2分でサイトに反映されます → <a href=\"" + SITE_URL + "\" target=\"_blank\" rel=\"noopener\">" + SITE_URL + "</a>";
+          if (link) {
+            base += "<br><a href=\"" + link + "\" target=\"_blank\" rel=\"noopener\">コミットを確認</a>";
+          }
+          return base;
+        }
+
+        function handleConflict(key, msgNode) {
+          showMsg(msgNode, "warn", "他の場所で更新されています。再読み込みします…");
+          loadOne(key).then(function () {
+            renderByKey(key);
+            showMsg(msgNode, "warn", "最新の内容を再読み込みしました。もう一度ご確認のうえ保存してください。");
+          });
+        }
+
+        function renderByKey(key) {
+          if (key === "banner") renderBanner();
+          else if (key === "docs") renderDocs();
+          else if (key === "interviews") renderInterviews();
+          else if (key === "logos") renderLogos();
+          else if (key === "faqs") renderFaqs();
+        }
+
+        // 配列の上下移動ヘルパ
+        function moveItem(arr, i, dir) {
+          var j = i + dir;
+          if (j < 0 || j >= arr.length) return;
+          var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+        }
+
+        function rawUrl(relPath) {
+          return SITE_URL + "/" + relPath;
+        }
+        function addPreviewFallback(imgEl) {
+          imgEl.onerror = function () {
+            imgEl.onerror = null;
+            imgEl.removeAttribute("src");
+            imgEl.classList.add("hidden");
+            var sib = imgEl.nextSibling;
+            if (sib && sib.classList && sib.classList.contains("filename")) {
+              sib.textContent = (sib.textContent || "") + "（画像はサイト反映後に表示されます）";
+            }
+          };
+        }
+
+        function moveButtons(arr, i, onChange) {
+          var up = el("button", { class: "subtle xs", text: "↑", title: "上へ" });
+          up.disabled = i === 0;
+          up.addEventListener("click", function () { moveItem(arr, i, -1); onChange(); });
+          var down = el("button", { class: "subtle xs", text: "↓", title: "下へ" });
+          down.disabled = i === arr.length - 1;
+          down.addEventListener("click", function () { moveItem(arr, i, 1); onChange(); });
+          return [up, down];
+        }
+
+        // ====================================================
+        // バナー
+        // ====================================================
+        function renderBanner() {
+          var d = state.banner.data || {};
+          $("#b_enabled").checked = !!d.enabled;
+          $("#b_alt").value = d.alt || "";
+          $("#b_link").value = d.link || "";
+          $("#b_newTab").checked = !!d.newTab;
+          var prev = $("#b_preview");
+          var fn = $("#b_filename");
+          if (d.image) {
+            addPreviewFallback(prev);
+            prev.src = rawUrl(d.image);
+            prev.classList.remove("hidden");
+            fn.textContent = "現在の画像: " + d.image;
+          } else {
+            prev.classList.add("hidden");
+            prev.removeAttribute("src");
+            fn.textContent = "画像が設定されていません。";
+          }
+        }
+
+        function wireBanner() {
+          $("#b_enabled").addEventListener("change", function () { state.banner.data.enabled = this.checked; });
+          $("#b_alt").addEventListener("input", function () { state.banner.data.alt = this.value; });
+          $("#b_link").addEventListener("input", function () { state.banner.data.link = this.value; });
+          $("#b_newTab").addEventListener("change", function () { state.banner.data.newTab = this.checked; });
+
+          $("#b_imageFile").addEventListener("change", function () {
+            var file = this.files[0];
+            var msg = $('[data-msg="banner"]');
+            if (!file) return;
+            var err = validateFile(file, "image");
+            if (err) { showMsg(msg, "err", err); this.value = ""; return; }
+            showMsg(msg, "warn", '<span class="spin"></span> 画像をアップロード中…');
+            uploadAsset(file, "public/banner", "CMS: バナー画像更新 (" + file.name + ")", msg)
+              .then(function () {
+                state.banner.data.image = "banner/" + file.name;
+                renderBanner();
+                showMsg(msg, "ok", "画像をアップロードしました。「保存」を押すとバナーに反映されます。");
+              })
+              .catch(function (e) { showMsg(msg, "err", "アップロード失敗: " + e.message); });
+          });
+        }
+
+        // ====================================================
+        // 資料一覧 (docs)
+        // ====================================================
+        function renderDocs() {
+          var list = $("#docsList");
+          list.innerHTML = "";
+          var arr = state.docs.data || [];
+          arr.forEach(function (item, i) {
+            list.appendChild(docItem(item, i, arr));
+          });
+        }
+
+        function docItem(item, i, arr) {
+          var msg = $('[data-msg="docs"]');
+          var titleF = el("input", { type: "text", value: item.title || "" });
+          titleF.addEventListener("input", function () { item.title = this.value; });
+          var descF = el("textarea", {});
+          descF.value = item.description || "";
+          descF.addEventListener("input", function () { item.description = this.value; });
+          var dateF = el("input", { type: "text", value: item.date || "", placeholder: "例: 2026-05" });
+          dateF.addEventListener("input", function () { item.date = this.value; });
+
+          var fileInfo = el("div", { class: "filename", text: item.file ? "ファイル: " + item.file : "ファイル未設定" });
+          var pdfInput = el("input", { type: "file", accept: "application/pdf" });
+          pdfInput.addEventListener("change", function () {
+            var f = this.files[0];
+            if (!f) return;
+            var e = validateFile(f, "pdf");
+            if (e) { showMsg(msg, "err", e); this.value = ""; return; }
+            showMsg(msg, "warn", '<span class="spin"></span> PDFをアップロード中…');
+            uploadAsset(f, "public/docs", "CMS: 資料PDF更新 (" + f.name + ")", msg)
+              .then(function () {
+                item.file = "docs/" + f.name;
+                fileInfo.textContent = "ファイル: " + item.file;
+                showMsg(msg, "ok", "PDFをアップロードしました。「保存」を押すと一覧に反映されます。");
+              })
+              .catch(function (er) { showMsg(msg, "err", "アップロード失敗: " + er.message); });
+          });
+
+          var availToggle = makeToggle("公開中", "", !!item.available, function (v) { item.available = v; });
+
+          var del = el("button", { class: "danger xs", text: "削除" });
+          del.addEventListener("click", function () {
+            if (!confirm("この資料を削除しますか？")) return;
+            arr.splice(i, 1); renderDocs();
+          });
+          var moves = moveButtons(arr, i, renderDocs);
+
+          return el("div", { class: "item" }, [
+            el("div", { class: "item-head" }, [
+              el("span", { class: "idx", text: "資料 " + (i + 1) }),
+              el("div", { class: "item-actions" }, moves.concat([del])),
+            ]),
+            labeled("タイトル", titleF),
+            labeled("説明", descF),
+            labeled("更新年月", dateF),
+            el("div", { class: "toggle-wrap" }, [availToggle]),
+            el("div", {}, [fileInfo, el("div", { class: "file-input-wrap" }, [pdfInput, el("p", { class: "small-note", text: "PDFのみ。public/docs/ にアップロードされます。" })])]),
+          ]);
+        }
+
+        function docsAdd() {
+          state.docs.data.push({ title: "", description: "", file: "", date: "", available: false });
+          renderDocs();
+        }
+
+        // ====================================================
+        // インタビュー (interviews)
+        // ====================================================
+        function renderInterviews() {
+          var list = $("#interviewsList");
+          list.innerHTML = "";
+          var arr = state.interviews.data || [];
+          arr.forEach(function (item, i) {
+            list.appendChild(interviewItem(item, i, arr));
+          });
+        }
+
+        function interviewItem(item, i, arr) {
+          var msg = $('[data-msg="interviews"]');
+          if (!item.qa) item.qa = [];
+
+          var sampleToggle = makeToggle(
+            "サンプル表記を付ける",
+            "実物インタビューに差し替えたら、このトグルをOFFにしてください（金色の SAMPLE チップが外れます）。",
+            !!item.sample,
+            function (v) { item.sample = v; }
+          );
+
+          var orgF = el("input", { type: "text", value: item.org || "" });
+          orgF.addEventListener("input", function () { item.org = this.value; });
+          var scaleF = el("input", { type: "text", value: item.scale || "" });
+          scaleF.addEventListener("input", function () { item.scale = this.value; });
+          var roleF = el("input", { type: "text", value: item.role || "" });
+          roleF.addEventListener("input", function () { item.role = this.value; });
+
+          // アバター
+          var avatarPrev = el("img", { class: "preview-img" });
+          addPreviewFallback(avatarPrev);
+          if (item.avatar) avatarPrev.src = rawUrl(item.avatar); else avatarPrev.classList.add("hidden");
+          var avatarInfo = el("div", { class: "filename", text: item.avatar ? "現在: " + item.avatar : "アバター未設定" });
+          var avatarInput = el("input", { type: "file", accept: "image/jpeg,image/png,image/webp,image/svg+xml" });
+          avatarInput.addEventListener("change", function () {
+            var f = this.files[0];
+            if (!f) return;
+            var e = validateFile(f, "image");
+            if (e) { showMsg(msg, "err", e); this.value = ""; return; }
+            showMsg(msg, "warn", '<span class="spin"></span> アバター画像をアップロード中…');
+            uploadAsset(f, "public/product", "CMS: インタビューアバター更新 (" + f.name + ")", msg)
+              .then(function () {
+                item.avatar = "product/" + f.name;
+                avatarPrev.src = rawUrl(item.avatar);
+                avatarPrev.classList.remove("hidden");
+                avatarInfo.textContent = "現在: " + item.avatar;
+                showMsg(msg, "ok", "アバターをアップロードしました。「保存」で反映されます。");
+              })
+              .catch(function (er) { showMsg(msg, "err", "アップロード失敗: " + er.message); });
+          });
+
+          // QA一覧
+          var qaWrap = el("div", {});
+          function renderQa() {
+            qaWrap.innerHTML = "";
+            item.qa.forEach(function (qa, qi) {
+              var qF = el("textarea", {});
+              qF.value = qa.q || "";
+              qF.addEventListener("input", function () { qa.q = this.value; });
+              var aF = el("textarea", {});
+              aF.value = qa.a || "";
+              aF.addEventListener("input", function () { qa.a = this.value; });
+
+              var qDel = el("button", { class: "danger xs", text: "削除" });
+              qDel.addEventListener("click", function () {
+                if (!confirm("このQ&Aを削除しますか？")) return;
+                item.qa.splice(qi, 1); renderQa();
+              });
+              var qMoves = moveButtons(item.qa, qi, renderQa);
+
+              qaWrap.appendChild(el("div", { class: "qa-block" }, [
+                el("div", { class: "qa-head" }, [
+                  el("span", { class: "qlab", text: "Q" + (qi + 1) }),
+                  el("div", { class: "item-actions" }, qMoves.concat([qDel])),
+                ]),
+                labeledSm("質問", qF),
+                labeledSm("回答", aF),
+              ]));
+            });
+            var addQa = el("button", { class: "ghost xs", text: "＋ Q&Aを追加" });
+            addQa.addEventListener("click", function () { item.qa.push({ q: "", a: "" }); renderQa(); });
+            qaWrap.appendChild(addQa);
+          }
+          renderQa();
+
+          var del = el("button", { class: "danger xs", text: "削除" });
+          del.addEventListener("click", function () {
+            if (!confirm("このインタビューを削除しますか？")) return;
+            arr.splice(i, 1); renderInterviews();
+          });
+          var moves = moveButtons(arr, i, renderInterviews);
+
+          return el("div", { class: "item" }, [
+            el("div", { class: "item-head" }, [
+              el("span", { class: "idx", text: "インタビュー " + (i + 1) }),
+              el("div", { class: "item-actions" }, moves.concat([del])),
+            ]),
+            el("div", { class: "toggle-wrap" }, [sampleToggle]),
+            labeled("業界・部門（org）", orgF),
+            labeled("規模（scale）", scaleF),
+            labeled("立場（role）", roleF),
+            el("div", { class: "field" }, [
+              el("span", { class: "lab", text: "アバター画像" }),
+              avatarPrev, avatarInfo,
+              el("div", { class: "file-input-wrap" }, [avatarInput]),
+            ]),
+            el("div", { class: "field" }, [el("span", { class: "lab", text: "Q&A" }), qaWrap]),
+          ]);
+        }
+
+        function interviewsAdd() {
+          state.interviews.data.push({ sample: true, org: "", scale: "", role: "", avatar: "", qa: [{ q: "", a: "" }] });
+          renderInterviews();
+        }
+
+        // ====================================================
+        // ロゴ (logos)
+        // ====================================================
+        function renderLogos() {
+          var list = $("#logosList");
+          list.innerHTML = "";
+          var arr = state.logos.data || [];
+          arr.forEach(function (item, i) {
+            list.appendChild(logoItem(item, i, arr));
+          });
+        }
+
+        function logoItem(item, i, arr) {
+          var msg = $('[data-msg="logos"]');
+          var nameF = el("input", { type: "text", value: item.name || "" });
+          nameF.addEventListener("input", function () { item.name = this.value; });
+
+          var prev = el("img", { class: "preview-img" });
+          addPreviewFallback(prev);
+          if (item.file) prev.src = rawUrl("logos/" + item.file); else prev.classList.add("hidden");
+          var info = el("div", { class: "filename", text: item.file ? "ファイル: " + item.file : "画像未設定" });
+          var input = el("input", { type: "file", accept: "image/jpeg,image/png,image/webp,image/svg+xml" });
+          input.addEventListener("change", function () {
+            var f = this.files[0];
+            if (!f) return;
+            var e = validateFile(f, "image");
+            if (e) { showMsg(msg, "err", e); this.value = ""; return; }
+            showMsg(msg, "warn", '<span class="spin"></span> ロゴ画像をアップロード中…');
+            uploadAsset(f, "public/logos", "CMS: ロゴ画像更新 (" + f.name + ")", msg)
+              .then(function () {
+                item.file = f.name; // ロゴはファイル名のみ
+                prev.src = rawUrl("logos/" + item.file);
+                prev.classList.remove("hidden");
+                info.textContent = "ファイル: " + item.file;
+                showMsg(msg, "ok", "ロゴをアップロードしました。「保存」で反映されます。");
+              })
+              .catch(function (er) { showMsg(msg, "err", "アップロード失敗: " + er.message); });
+          });
+
+          var pendingToggle = makeToggle(
+            "確認中バッジを付ける",
+            "正式なロゴが届いたらOFFにしてください（「確認中」バッジが外れます）。",
+            !!item.pending,
+            function (v) {
+              if (v) item.pending = true;
+              else delete item.pending; // 現行規約: pendingはキーごと削除
+            }
+          );
+
+          var del = el("button", { class: "danger xs", text: "削除" });
+          del.addEventListener("click", function () {
+            if (!confirm("このロゴを削除しますか？")) return;
+            arr.splice(i, 1); renderLogos();
+          });
+          var moves = moveButtons(arr, i, renderLogos);
+
+          return el("div", { class: "item" }, [
+            el("div", { class: "item-head" }, [
+              el("span", { class: "idx", text: "ロゴ " + (i + 1) }),
+              el("div", { class: "item-actions" }, moves.concat([del])),
+            ]),
+            labeled("企業名（name）", nameF),
+            el("div", { class: "field" }, [
+              el("span", { class: "lab", text: "ロゴ画像" }),
+              prev, info,
+              el("div", { class: "file-input-wrap" }, [input]),
+            ]),
+            el("div", { class: "toggle-wrap" }, [pendingToggle]),
+          ]);
+        }
+
+        function logosAdd() {
+          state.logos.data.push({ file: "", name: "" });
+          renderLogos();
+        }
+
+        // ====================================================
+        // FAQ (faqs)
+        // ====================================================
+        function renderFaqs() {
+          var list = $("#faqsList");
+          list.innerHTML = "";
+          var arr = state.faqs.data || [];
+          arr.forEach(function (item, i) {
+            list.appendChild(faqItem(item, i, arr));
+          });
+        }
+
+        function faqItem(item, i, arr) {
+          var qF = el("textarea", {});
+          qF.value = item.q || "";
+          qF.addEventListener("input", function () { item.q = this.value; });
+          var aF = el("textarea", {});
+          aF.value = item.a || "";
+          aF.addEventListener("input", function () { item.a = this.value; });
+
+          var del = el("button", { class: "danger xs", text: "削除" });
+          del.addEventListener("click", function () {
+            if (!confirm("この質問を削除しますか？")) return;
+            arr.splice(i, 1); renderFaqs();
+          });
+          var moves = moveButtons(arr, i, renderFaqs);
+
+          return el("div", { class: "item" }, [
+            el("div", { class: "item-head" }, [
+              el("span", { class: "idx", text: "Q" + (i + 1) }),
+              el("div", { class: "item-actions" }, moves.concat([del])),
+            ]),
+            labeled("質問", qF),
+            labeled("回答", aF),
+          ]);
+        }
+
+        function faqsAdd() {
+          state.faqs.data.push({ q: "", a: "" });
+          renderFaqs();
+        }
+
+        // ---------- 共通UIヘルパ ----------
+        function labeled(text, control) {
+          return el("label", { class: "field" }, [el("span", { class: "lab", text: text }), control]);
+        }
+        function labeledSm(text, control) {
+          return el("div", { class: "field", style: "margin-bottom:8px;" }, [el("span", { class: "lab", text: text }), control]);
+        }
+        function makeToggle(labelText, descText, checked, onChange) {
+          var input = el("input", { type: "checkbox" });
+          input.checked = checked;
+          input.addEventListener("change", function () { onChange(this.checked); });
+          var labelChildren = [el("span", { class: "tlab", text: labelText })];
+          if (descText) labelChildren.push(el("span", { class: "tdesc", text: " " + descText }));
+          return el("label", { class: "toggle" }, [
+            input,
+            el("span", { class: "track" }),
+            el("span", {}, labelChildren),
+          ]);
+        }
+
+        // ---------- 保存ボタン共通 ----------
+        var SAVE_MSG = {
+          banner: "CMS: バナー更新",
+          docs: "CMS: 資料一覧更新",
+          interviews: "CMS: 導入インタビュー更新",
+          logos: "CMS: ロゴ更新",
+          faqs: "CMS: FAQ更新",
+        };
+
+        function wireSaveButtons() {
+          $all(".saveBtn").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              var key = btn.getAttribute("data-key");
+              var msg = $('[data-msg="' + key + '"]');
+              btn.disabled = true;
+              showMsg(msg, "warn", '<span class="spin"></span> 保存中…');
+              saveJson(key, SAVE_MSG[key], msg)
+                .then(function (commit) {
+                  showMsg(msg, "ok", savedHtml(commit));
+                })
+                .catch(function (err) {
+                  if (err.message === "CONFLICT") {
+                    handleConflict(key, msg);
+                  } else {
+                    showMsg(msg, "err", "保存に失敗しました: " + err.message);
+                  }
+                })
+                .then(function () { btn.disabled = false; });
+            });
+          });
+        }
+
+        // ---------- タブ ----------
+        function wireTabs() {
+          $all("#tabs button").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              var tab = btn.getAttribute("data-tab");
+              $all("#tabs button").forEach(function (b) { b.classList.toggle("active", b === btn); });
+              $all(".tabpane").forEach(function (p) {
+                p.classList.toggle("hidden", p.getAttribute("data-pane") !== tab);
+              });
+            });
+          });
+        }
+
+        // ---------- 初期化 ----------
+        function init() {
+          wireTabs();
+          wireBanner();
+          wireSaveButtons();
+          $("#connectBtn").addEventListener("click", function () {
+            var token = $("#patInput").value.trim();
+            if (!token) { showMsg($("#connMsg"), "err", "トークンを入力してください。"); return; }
+            connect(token);
+          });
+          $("#patInput").addEventListener("keydown", function (e) {
+            if (e.key === "Enter") { e.preventDefault(); $("#connectBtn").click(); }
+          });
+          $("#logoutBtn").addEventListener("click", logout);
+          $("#docsAdd").addEventListener("click", docsAdd);
+          $("#interviewsAdd").addEventListener("click", interviewsAdd);
+          $("#logosAdd").addEventListener("click", logosAdd);
+          $("#faqsAdd").addEventListener("click", faqsAdd);
+
+          // 保存済みPATがあれば自動接続を試みる
+          var saved = "";
+          try { saved = localStorage.getItem(LS_KEY) || ""; } catch (e) {}
+          if (saved) {
+            $("#patInput").value = saved;
+            connect(saved);
+          }
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", init);
+        } else {
+          init();
+        }
+      })();
+    </script>
+  </body>
+</html>

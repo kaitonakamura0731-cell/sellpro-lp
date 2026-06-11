@@ -24,7 +24,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "cd ~/projects/clients/sellpro/site && ls src/data/ && npm run build 2>&1 | tail -1 && diff /tmp/index-before.html dist/index.html && echo \"DIFF_ZERO_OK\" && head -8 src/data/logos.json && grep -n \"import logos\\|import faqs\" src/pages/index.astro",
+    "buildCommand": "npm run build 2>&1 | tail -15 && echo \"---raw.githubusercontent count (expect 0)---\" && grep -c \"raw.githubusercontent\" src/pages/admin.astro || echo 0 && echo \"---git status (non-.omc)---\" && git status --porcelain | grep -v \".omc/\"",
     "testCommand": null,
     "lintCommand": null,
     "devCommand": "npm run dev",
@@ -180,9 +180,27 @@
       "type": "file"
     },
     {
+      "path": "src/pages/admin.astro",
+      "accessCount": 9,
+      "lastAccessed": 1781167997190,
+      "type": "file"
+    },
+    {
       "path": "src/data/README-CMS.md",
-      "accessCount": 4,
-      "lastAccessed": 1781165817156,
+      "accessCount": 6,
+      "lastAccessed": 1781167871566,
+      "type": "file"
+    },
+    {
+      "path": "src/data/logos.json",
+      "accessCount": 2,
+      "lastAccessed": 1781167674597,
+      "type": "file"
+    },
+    {
+      "path": "src/data/faqs.json",
+      "accessCount": 2,
+      "lastAccessed": 1781167674783,
       "type": "file"
     },
     {
@@ -246,15 +264,27 @@
       "type": "file"
     },
     {
-      "path": "src/data/logos.json",
+      "path": "src/data/banner.json",
       "accessCount": 1,
-      "lastAccessed": 1781165711610,
+      "lastAccessed": 1781167673226,
       "type": "file"
     },
     {
-      "path": "src/data/faqs.json",
+      "path": "src/data/docs.json",
       "accessCount": 1,
-      "lastAccessed": 1781165726820,
+      "lastAccessed": 1781167673673,
+      "type": "file"
+    },
+    {
+      "path": "src/data/interviews.json",
+      "accessCount": 1,
+      "lastAccessed": 1781167674113,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1781167680852,
       "type": "file"
     }
   ],

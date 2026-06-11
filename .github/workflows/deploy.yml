@@ -1,0 +1,18 @@
+name: Deploy to Vercel
+# CMS(/admin/)の保存=mainへのコミット をトリガーに本番デプロイする。
+# Vercel GitHub App の代わり（Appのリポジトリ権限付与が不要な方式）。
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npx vercel@latest deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
