@@ -1,6 +1,6 @@
 name: Deploy to Vercel
-# CMS(/admin/)の保存=mainへのコミット をトリガーに本番デプロイする。
-# Vercel GitHub App の代わり（Appのリポジトリ権限付与が不要な方式）。
+# mainへのpushをトリガーに本番デプロイする。
+# Vercel GitHub App の代わりに、ActionsからVercel CLIで反映する方式。
 on:
   push:
     branches: [main]
