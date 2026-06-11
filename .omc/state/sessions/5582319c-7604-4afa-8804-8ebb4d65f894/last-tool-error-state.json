@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cd ~/projects/clients/sellpro/site && ls src/data/ && echo \\\"--- banner.json:\\\" && cat src/data/banner.json && echo \\\"--- docs.json:\\\" && cat src/data/docs.json && echo \\\"--- interviews.js...",
+  "error": "Exit code 2\nbanner.json\ndocs.json\ninterviews.json\nREADME-CMS.md\n--- banner.json:\n{\n  \"enabled\": true,\n  \"image\": \"banner/banner-docs.webp\",\n  \"alt\": \"SellPro ご紹介資料 無料ダウンロード — サービス概要・機能・活用事例を1冊に\",\n  \"link\": \"/docs/\",\n  \"newTab\": false\n}\n--- docs.json:\n[\n  {\n    \"title\": \"SellPro ご紹介資料\",\n    \"description\": \"サービス概要・機能・活用事例をまとめた説明資料\",\n    \"file\": \"docs/sellpro-introduction.pdf\",\n    \"date\": \"2026-05\",\n    \"available\": true\n  },\n  {\n    \"title\": \"導入事例集\",\n    \"description\": \"業界別の導入事例をまとめた資料\",\n    \"fil...",
+  "timestamp": "2026-06-11T08:13:46.407Z",
+  "retry_count": 1
+}

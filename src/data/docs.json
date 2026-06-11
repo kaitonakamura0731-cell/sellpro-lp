@@ -1,0 +1,16 @@
+[
+  {
+    "title": "SellPro ご紹介資料",
+    "description": "サービス概要・機能・活用事例をまとめた説明資料",
+    "file": "docs/sellpro-introduction.pdf",
+    "date": "2026-05",
+    "available": true
+  },
+  {
+    "title": "導入事例集",
+    "description": "業界別の導入事例をまとめた資料",
+    "file": "",
+    "date": "",
+    "available": false
+  }
+]

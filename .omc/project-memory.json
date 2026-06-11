@@ -1,0 +1,262 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1781160198401,
+  "projectRoot": "/Users/kaito/projects/clients/sellpro/site",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "astro",
+        "version": "4.16.7",
+        "category": "fullstack"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "cd ~/projects/clients/sellpro/site && ls src/data/ && npm run build 2>&1 | tail -1 && diff /tmp/index-before.html dist/index.html && echo \"DIFF_ZERO_OK\" && head -8 src/data/logos.json && grep -n \"import logos\\|import faqs\" src/pages/index.astro",
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "astro dev",
+      "start": "astro dev",
+      "build": "astro build",
+      "preview": "astro preview",
+      "astro": "astro"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": "type-based"
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "public",
+      "src"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "_verify": {
+      "path": "_verify",
+      "purpose": null,
+      "fileCount": 68,
+      "lastAccessed": 1781160198387,
+      "keyFiles": [
+        "c-cta-320.png",
+        "c-cta-768.png",
+        "c-cta2-768.png",
+        "c-form-320.png",
+        "c-form-768.png"
+      ]
+    },
+    "_verify-b": {
+      "path": "_verify-b",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1781160198389,
+      "keyFiles": [
+        "viewport-1280.png",
+        "viewport-320.png",
+        "viewport-768.png"
+      ]
+    },
+    "_verify-docs": {
+      "path": "_verify-docs",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1781160198389,
+      "keyFiles": [
+        "viewport-1280.png",
+        "viewport-320.png",
+        "viewport-768.png"
+      ]
+    },
+    "dist": {
+      "path": "dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 1,
+      "lastAccessed": 1781160198389,
+      "keyFiles": [
+        "index.html"
+      ]
+    },
+    "public": {
+      "path": "public",
+      "purpose": "Public files",
+      "fileCount": 0,
+      "lastAccessed": 1781160198390,
+      "keyFiles": []
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1781160198390,
+      "keyFiles": [
+        "env.d.ts"
+      ]
+    },
+    "dist/docs": {
+      "path": "dist/docs",
+      "purpose": "Documentation",
+      "fileCount": 2,
+      "lastAccessed": 1781160198390,
+      "keyFiles": [
+        "index.html",
+        "sellpro-introduction.pdf"
+      ]
+    },
+    "public/docs": {
+      "path": "public/docs",
+      "purpose": "Documentation",
+      "fileCount": 1,
+      "lastAccessed": 1781160198390,
+      "keyFiles": [
+        "sellpro-introduction.pdf"
+      ]
+    },
+    "src/components": {
+      "path": "src/components",
+      "purpose": "UI components",
+      "fileCount": 3,
+      "lastAccessed": 1781160198390,
+      "keyFiles": [
+        "CtaBandExa.astro",
+        "FeatureMock.astro",
+        "FloatingBanner.astro"
+      ]
+    },
+    "src/data": {
+      "path": "src/data",
+      "purpose": "Data files",
+      "fileCount": 4,
+      "lastAccessed": 1781160198390,
+      "keyFiles": [
+        "README-CMS.md",
+        "banner.json",
+        "docs.json"
+      ]
+    },
+    "src/pages": {
+      "path": "src/pages",
+      "purpose": "Page components",
+      "fileCount": 3,
+      "lastAccessed": 1781160198391,
+      "keyFiles": [
+        "contact.astro",
+        "docs.astro",
+        "index.astro"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src/styles/exa.css",
+      "accessCount": 37,
+      "lastAccessed": 1781165419854,
+      "type": "file"
+    },
+    {
+      "path": "src/pages/index.astro",
+      "accessCount": 9,
+      "lastAccessed": 1781165762980,
+      "type": "file"
+    },
+    {
+      "path": "src/data/README-CMS.md",
+      "accessCount": 4,
+      "lastAccessed": 1781165817156,
+      "type": "file"
+    },
+    {
+      "path": "src/components/FeatureMock.astro",
+      "accessCount": 1,
+      "lastAccessed": 1781160238649,
+      "type": "file"
+    },
+    {
+      "path": "_verify/sec-features.png",
+      "accessCount": 1,
+      "lastAccessed": 1781165366334,
+      "type": "file"
+    },
+    {
+      "path": "_verify/sec-reasons.png",
+      "accessCount": 1,
+      "lastAccessed": 1781165366751,
+      "type": "file"
+    },
+    {
+      "path": "_verify/sec-stats.png",
+      "accessCount": 1,
+      "lastAccessed": 1781165385257,
+      "type": "file"
+    },
+    {
+      "path": "_verify/sec-story.png",
+      "accessCount": 1,
+      "lastAccessed": 1781165385661,
+      "type": "file"
+    },
+    {
+      "path": "_verify/sec-stats2.png",
+      "accessCount": 1,
+      "lastAccessed": 1781165450297,
+      "type": "file"
+    },
+    {
+      "path": "_verify/sec-sp-reasons.png",
+      "accessCount": 1,
+      "lastAccessed": 1781165450562,
+      "type": "file"
+    },
+    {
+      "path": "_verify/sec-sp-features.png",
+      "accessCount": 1,
+      "lastAccessed": 1781165467923,
+      "type": "file"
+    },
+    {
+      "path": "_verify/sec-sp-story.png",
+      "accessCount": 1,
+      "lastAccessed": 1781165468020,
+      "type": "file"
+    },
+    {
+      "path": "src/components/FloatingBanner.astro",
+      "accessCount": 1,
+      "lastAccessed": 1781165692619,
+      "type": "file"
+    },
+    {
+      "path": "src/data/logos.json",
+      "accessCount": 1,
+      "lastAccessed": 1781165711610,
+      "type": "file"
+    },
+    {
+      "path": "src/data/faqs.json",
+      "accessCount": 1,
+      "lastAccessed": 1781165726820,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

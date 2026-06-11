@@ -1,0 +1,200 @@
+---
+// お問い合わせページ — /contact/
+// docs.astro と同構成（exa.css import・LP共通ヘッダー・フッター）
+import "../styles/exa.css";
+
+const meta = {
+  title: "お問い合わせ | SellPro（セルプロ）- One StepS",
+  description:
+    "SellPro（セルプロ）への導入相談・資料請求・デモのご依頼はこちらから。",
+};
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{meta.title}</title>
+    <meta name="description" content={meta.description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={meta.title} />
+    <meta property="og:description" content={meta.description} />
+    <meta property="og:image" content="product/og.png" />
+    <meta property="og:site_name" content="SellPro（セルプロ）" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="../logos/sellpro.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="/" aria-label="SellPro トップへ">
+          <img src="../logos/sellpro.svg" alt="SellPro（セルプロ）ロゴ" width="489" height="140" />
+        </a>
+        <nav class="header-nav" aria-label="ナビゲーション">
+          <a href="/">トップ</a>
+          <a href="/#features">機能</a>
+          <a href="/#cases">事例</a>
+          <a href="/docs/">資料</a>
+          <a class="btn btn-vivid" href="/contact/">お問い合わせ</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="contact" id="contact" aria-labelledby="contact-h">
+        <div class="container contact-grid">
+          <div class="contact-copy">
+            <h2 id="contact-h">お問い合わせ</h2>
+            <p>
+              導入のご相談、資料請求、その他のご質問はこちらから。内容を確認のうえ、担当者よりご連絡します。
+            </p>
+            <p class="contact-hint">
+              最短デモ30分／初期費用・最低契約期間の有無もお問い合わせ時にご案内。1分で送信できます。
+            </p>
+            <p class="mailto-note">
+              ※ モック版のため、送信ボタンを押すとお使いのメールソフトが起動します。
+            </p>
+          </div>
+          <!--
+            モック実装: mailto 方式（送信先 geriru0099@gmail.com）。
+            本番では GAS（Google Apps Script）等のフォームエンドポイントへ差し替える前提。
+          -->
+          <form class="contact-form" id="contact-form" novalidate>
+            <div class="form-row">
+              <div class="field">
+                <label for="f-name">お名前<span class="req">必須</span></label>
+                <input id="f-name" name="name" type="text" autocomplete="name" required />
+              </div>
+              <div class="field">
+                <label for="f-company">会社名<span class="req">必須</span></label>
+                <input id="f-company" name="company" type="text" autocomplete="organization" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="f-email">メールアドレス<span class="req">必須</span></label>
+                <input id="f-email" name="email" type="email" autocomplete="email" required />
+              </div>
+              <div class="field">
+                <label for="f-type">お問い合わせ種別</label>
+                <select id="f-type" name="type">
+                  <option value="導入相談">導入相談</option>
+                  <option value="デモ・トライアル相談">デモ・トライアル相談</option>
+                  <option value="資料請求">資料請求</option>
+                  <option value="その他">その他</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-body">本文</label>
+              <textarea id="f-body" name="body" placeholder="現在の資料作成の体制や、お困りごとをお書きください"></textarea>
+            </div>
+            <!-- プライバシーポリシー正式URLは未確認（onesteps.co.jp/privacy はソフト404実証済みのためリンク無しのプレーン表記へ暫定退避。
+                 田山さんへ照会のうえ、正式URL確定後にポリシーへのリンク付き同意文へ差し替える） -->
+            <div class="consent-row">
+              <label for="f-consent">
+                <input id="f-consent" name="consent" type="checkbox" required />
+                <span class="consent-text">
+                  個人情報の取り扱いに同意する<span class="req">必須</span>
+                </span>
+              </label>
+            </div>
+            <button class="btn btn-vivid" type="submit">送信する</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <a class="brand" href="/">
+              <img src="../logos/sellpro.svg" alt="SellPro（セルプロ）ロゴ" width="489" height="140" />
+            </a>
+            <p>スライド・議事録作成を自動化するAIエージェント。</p>
+          </div>
+          <dl class="footer-company">
+            <dt>運営会社</dt>
+            <dd>株式会社One StepS（ワンステップス）</dd>
+            <dd>東京都港区南青山3-8-40 青山センタービル2F-20</dd>
+            <dd><a href="https://onesteps.co.jp/" target="_blank" rel="noopener">onesteps.co.jp</a></dd>
+            <dd><a href="https://onesteps.co.jp/" target="_blank" rel="noopener">プライバシーポリシー</a></dd>
+            <dd><a href="/docs/">資料ダウンロード</a></dd>
+          </dl>
+        </div>
+        <p class="copyright">&copy; 2026 One StepS Inc.</p>
+      </div>
+    </footer>
+
+    <script is:inline>
+      // お問い合わせフォーム: モックは mailto で送信内容を組み立てる。
+      // 本番では GAS 等のエンドポイントへ POST する実装に差し替える（送信先: geriru0099@gmail.com）。
+      (function () {
+        var form = document.getElementById("contact-form");
+        if (!form) return;
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var name = document.getElementById("f-name").value.trim();
+          var company = document.getElementById("f-company").value.trim();
+          var email = document.getElementById("f-email").value.trim();
+          var type = document.getElementById("f-type").value;
+          var body = document.getElementById("f-body").value.trim();
+          if (!name || !company || !email) {
+            alert("お名前・会社名・メールアドレスをご入力ください。");
+            return;
+          }
+          // novalidate運用のため、メール形式はJS側で検証する
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            alert("メールアドレスの形式をご確認ください。");
+            return;
+          }
+          var consent = document.getElementById("f-consent");
+          if (consent && !consent.checked) {
+            alert("個人情報の取り扱いへの同意をお願いします。");
+            return;
+          }
+          var lines = [
+            "【SellPro お問い合わせ】",
+            "お名前: " + name,
+            "会社名: " + (company || "（未記入）"),
+            "メールアドレス: " + email,
+            "種別: " + type,
+            "",
+            "本文:",
+            body || "（未記入）",
+          ];
+          var subject = "【SellPro】" + type + "（" + name + "様）";
+          window.location.href =
+            "mailto:geriru0099@gmail.com?subject=" +
+            encodeURIComponent(subject) +
+            "&body=" +
+            encodeURIComponent(lines.join("\n"));
+        });
+      })();
+      // クエリパラメータ ?type=xxx でお問い合わせ種別をプリセレクト
+      (function () {
+        var select = document.getElementById("f-type");
+        if (!select) return;
+        var params = new URLSearchParams(window.location.search);
+        var t = params.get("type");
+        if (t) {
+          for (var i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === t) {
+              select.selectedIndex = i;
+              break;
+            }
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>

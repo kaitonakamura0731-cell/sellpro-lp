@@ -1,0 +1,120 @@
+---
+// 常時表示バナー（画面右下固定の告知カード）。
+// 表示内容は src/data/banner.json で差し替える（enabled / image / alt / link / newTab）。
+// 画像は public/banner/ に置き、JSON の image はそのファイル名（例: "banner/foo.webp"）を指定する。
+import banner from "../data/banner.json";
+
+const show = banner.enabled === true && banner.image;
+const target = banner.newTab ? "_blank" : undefined;
+const rel = banner.newTab ? "noopener" : undefined;
+---
+
+{
+  show && (
+    <aside class="floating-banner" id="floating-banner" aria-label="お知らせ">
+      <button
+        type="button"
+        class="fb-close"
+        id="floating-banner-close"
+        aria-label="お知らせを閉じる"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+          <path d="M6 6l12 12M18 6L6 18" stroke="#16335f" stroke-width="2.2" stroke-linecap="round" />
+        </svg>
+      </button>
+      <a class="fb-link" href={banner.link} target={target} rel={rel}>
+        <img src={banner.image} alt={banner.alt} width="600" height="220" />
+      </a>
+    </aside>
+  )
+}
+
+<style>
+  .floating-banner {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 80;
+    width: 300px;
+    max-width: calc(100vw - 40px);
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid rgba(28, 111, 210, 0.16);
+    box-shadow: 0 10px 30px rgba(8, 32, 74, 0.22);
+    overflow: hidden;
+  }
+
+  .fb-link {
+    display: block;
+    line-height: 0;
+  }
+
+  .fb-link img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+  }
+
+  .fb-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 1;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 2px 8px rgba(8, 32, 74, 0.18);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .fb-close:hover {
+    background: #fff;
+    transform: translateY(-1px);
+  }
+
+  .fb-close:focus-visible {
+    outline: 2px solid #5ecfea;
+    outline-offset: 2px;
+  }
+
+  /* モバイル: 画面幅の約72%・下中央寄せ（R9: 80vw→72vwで本文への干渉を軽減） */
+  @media (max-width: 560px) {
+    .floating-banner {
+      width: 72vw;
+      right: 50%;
+      transform: translateX(50%);
+      bottom: 16px;
+    }
+  }
+</style>
+
+<script is:inline>
+  // 閉じるボタン: 非表示にしてセッション中は再表示しない（sessionStorage）。
+  (function () {
+    var KEY = "sellpro-floating-banner-closed";
+    var el = document.getElementById("floating-banner");
+    if (!el) return;
+    try {
+      if (sessionStorage.getItem(KEY) === "1") {
+        el.style.display = "none";
+        return;
+      }
+    } catch (e) {}
+    var btn = document.getElementById("floating-banner-close");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      el.style.display = "none";
+      try {
+        sessionStorage.setItem(KEY, "1");
+      } catch (e) {}
+    });
+  })();
+</script>

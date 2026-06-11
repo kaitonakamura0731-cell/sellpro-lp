@@ -1,0 +1,7 @@
+{
+  "tool_name": "mcp__claude-in-chrome__browser_batch",
+  "tool_input_preview": "{\"actions\":[{\"name\":\"computer\",\"input\":{\"action\":\"wait\",\"duration\":10,\"tabId\":60086224}},{\"name\":\"computer\",\"input\":{\"action\":\"wait\",\"duration\":10,\"tabId\":60086224}},{\"name\":\"computer\",\"input\":{\"actio...",
+  "error": "The \"browser_batch\" tool did not respond in time. The Chrome extension is connected but the page may be loading, unresponsive, or waiting on a permission prompt in the extension side panel. Try a lighter operation (e.g., \"get_page_text\" instead of a screenshot) or ask the user to check the page and any pending prompts.",
+  "timestamp": "2026-06-10T14:04:16.735Z",
+  "retry_count": 1
+}

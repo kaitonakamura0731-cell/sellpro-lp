@@ -1,0 +1,19 @@
+[
+  { "file": "hokuriku.png", "name": "株式会社北陸銀行" },
+  { "file": "awabank.svg", "name": "株式会社阿波銀行" },
+  { "file": "samantha.jpg", "name": "サマンサタバサジャパンリミテッド" },
+  { "file": "sakura.jpg", "name": "株式会社サクラクレパス" },
+  { "file": "paloma.png", "name": "株式会社パロマ" },
+  { "file": "organo.png", "name": "オルガノ株式会社" },
+  { "file": "ht.jpg", "name": "株式会社ホンダトレーディング" },
+  { "file": "onet.svg", "name": "株式会社オーネット" },
+  { "file": "enegate.jpg", "name": "株式会社エネゲート" },
+  { "file": "touteku.png", "name": "東テク株式会社" },
+  { "file": "jmax.png", "name": "J-MAX株式会社" },
+  { "file": "hba.png", "name": "株式会社HBA" },
+  { "file": "abdi.svg", "name": "株式会社ABDi" },
+  { "file": "teikoku.png", "name": "帝国不動産" },
+  { "file": "arara.svg", "name": "アララ", "pending": true },
+  { "file": "formx.svg", "name": "FormX", "pending": true },
+  { "file": "orso.png", "name": "株式会社ORSO", "pending": true }
+]

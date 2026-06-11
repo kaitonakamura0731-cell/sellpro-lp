@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cat > /tmp/clipshot.cjs <<'EOF'\\nconst path = require(\\\"node:path\\\");\\nlet puppeteer;\\ntry { puppeteer = require(\\\"puppeteer\\\"); }\\ncatch (e) { puppeteer = require(path.join(\\\"/tmp\\\", \\\"si...",
+  "error": "Exit code 1\ninterview box: {\"top\":14022.6875,\"height\":2293.75}\nError: 'clip' and 'fullPage' are mutually exclusive\n    at CdpPage.screenshot (file:///private/tmp/node_modules/puppeteer-core/lib/puppeteer/api/Page.js:1046:31)\n    at async CdpPage.<anonymous> (file:///private/tmp/node_modules/puppeteer-core/lib/puppeteer/util/decorators.js:164:24)\n    at async /private/tmp/clipshot.cjs:19:3",
+  "timestamp": "2026-06-10T12:19:09.431Z",
+  "retry_count": 1
+}

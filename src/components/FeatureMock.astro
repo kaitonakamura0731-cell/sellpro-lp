@@ -1,0 +1,141 @@
+---
+// 機能カード用ミニUIモック（HTML/CSS/インラインSVGで組むプロダクト風の小画面）。
+// 日本語が完全にシャープに出るのでこのページの主戦力。viz id で出し分ける。
+// スタイルは exa.css 側 .fm-* に集約（このページ全体のCSS変数を共有するため）。
+interface Props {
+  viz: string;
+}
+const { viz } = Astro.props;
+---
+
+{/* 01 指示だけで資料が完成: プロンプト入力欄 → スライドサムネ3枚生成 */}
+{viz === "prompt" && (
+  <div class="fm fm-prompt" aria-hidden="true">
+    <div class="fm-input">
+      <span class="fm-spark">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5 9.4 6 14 7.4 9.4 8.8 8 13.5 6.6 8.8 2 7.4 6.6 6 8 1.5Z" fill="#1c6fd2" /></svg>
+      </span>
+      <span class="fm-typed">新製品の提案資料を作って</span>
+      <span class="fm-caret" />
+      <span class="fm-send"><svg viewBox="0 0 16 16" fill="none"><path d="M2 8h10m0 0L8 4m4 4-4 4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+    </div>
+    <div class="fm-gen-label"><span class="fm-dot" />スライドを生成中…</div>
+    <div class="fm-thumbs">
+      <span class="fm-th">
+        <span class="fm-th-bar" />
+        <span class="fm-th-ln" style="width:70%" />
+        <span class="fm-th-ln" style="width:48%" />
+      </span>
+      <span class="fm-th">
+        <span class="fm-th-graph">
+          <span style="height:40%" /><span style="height:68%" /><span style="height:90%" /><span style="height:56%" />
+        </span>
+      </span>
+      <span class="fm-th">
+        <span class="fm-th-bar" />
+        <span class="fm-th-ln" style="width:60%" />
+        <span class="fm-th-pie" />
+      </span>
+    </div>
+  </div>
+)}
+
+{/* 02 構成・デザインの自動最適化: 乱れたレイアウト → 整ったレイアウト */}
+{viz === "layout" && (
+  <div class="fm fm-layout" aria-hidden="true">
+    <div class="fm-canvas fm-messy">
+      <span class="fm-box" style="left:10%;top:14%;width:34%;height:22%;transform:rotate(-4deg)" />
+      <span class="fm-box" style="left:52%;top:30%;width:40%;height:40%;transform:rotate(3deg)" />
+      <span class="fm-box" style="left:14%;top:52%;width:28%;height:30%;transform:rotate(-2deg)" />
+    </div>
+    <span class="fm-ar"><svg viewBox="0 0 18 12"><path d="M2 6h12m0 0-4-4m4 4-4 4" stroke="#1c6fd2" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+    <div class="fm-canvas fm-tidy">
+      <span class="fm-box fm-fill" style="left:8%;top:12%;width:84%;height:18%" />
+      <span class="fm-box" style="left:8%;top:38%;width:40%;height:48%" />
+      <span class="fm-box" style="left:52%;top:38%;width:40%;height:48%" />
+    </div>
+  </div>
+)}
+
+{/* 03 トンマナ・テンプレート設定: カラースウォッチ + Aaフォント + スライド枠に色が流れる */}
+{viz === "tonmana" && (
+  <div class="fm fm-tonmana" aria-hidden="true">
+    <div class="fm-tm-controls">
+      <div class="fm-swatches">
+        <span style="--c:#1c6fd2" /><span style="--c:#16335f" /><span style="--c:#5ecfea" />
+      </div>
+      <div class="fm-font">Aa<small>あ ア</small></div>
+    </div>
+    <span class="fm-ar"><svg viewBox="0 0 18 12"><path d="M2 6h12m0 0-4-4m4 4-4 4" stroke="#1c6fd2" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+    <div class="fm-tm-slide">
+      <span class="fm-tm-head" />
+      <span class="fm-tm-ln" style="width:78%" />
+      <span class="fm-tm-ln" style="width:54%" />
+      <span class="fm-tm-accent" />
+    </div>
+  </div>
+)}
+
+{/* 04 文字起こし〜議事録 3-5分: 音声波形 → テキスト行 + バッジ */}
+{viz === "transcribe" && (
+  <div class="fm fm-transcribe" aria-hidden="true">
+    <div class="fm-wave">
+      {Array.from({ length: 22 }).map((_, i) => (
+        <span style={`height:${20 + Math.abs(Math.sin(i * 1.3)) * 70}%`} />
+      ))}
+    </div>
+    <span class="fm-ar fm-ar-down"><svg viewBox="0 0 12 18"><path d="M6 2v12m0 0 4-4m-4 4-4-4" stroke="#1c6fd2" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+    <div class="fm-doc">
+      <span class="fm-doc-ln" style="width:90%" />
+      <span class="fm-doc-ln" style="width:72%" />
+      <span class="fm-doc-ln" style="width:80%" />
+    </div>
+    <span class="fm-badge">3〜5分</span>
+  </div>
+)}
+
+{/* 05 話者識別: 話者別に色分けされた発言行 */}
+{viz === "diarize" && (
+  <div class="fm fm-diarize" aria-hidden="true">
+    <div class="fm-spk fm-spk-a">
+      <span class="fm-spk-av">A</span>
+      <span class="fm-spk-body">
+        <b>SPEAKER_01</b>
+        <i style="width:88%" /><i style="width:60%" />
+      </span>
+    </div>
+    <div class="fm-spk fm-spk-b">
+      <span class="fm-spk-av">B</span>
+      <span class="fm-spk-body">
+        <b>SPEAKER_02</b>
+        <i style="width:74%" />
+      </span>
+    </div>
+    <div class="fm-spk fm-spk-a">
+      <span class="fm-spk-av">A</span>
+      <span class="fm-spk-body">
+        <b>SPEAKER_01</b>
+        <i style="width:66%" />
+      </span>
+    </div>
+  </div>
+)}
+
+{/* 06 テンプレート議事録・要約: 決定事項 / ToDo 見出しのミニドキュメント */}
+{viz === "summary" && (
+  <div class="fm fm-summary" aria-hidden="true">
+    <div class="fm-sm-doc">
+      <span class="fm-sm-title" />
+      <div class="fm-sm-sec">
+        <span class="fm-sm-h"><span class="fm-sm-tag">決定事項</span></span>
+        <span class="fm-sm-li"><i class="fm-sm-ck" /><i class="fm-sm-tx" style="width:78%" /></span>
+        <span class="fm-sm-li"><i class="fm-sm-ck" /><i class="fm-sm-tx" style="width:62%" /></span>
+      </div>
+      <div class="fm-sm-sec">
+        <span class="fm-sm-h"><span class="fm-sm-tag fm-sm-tag2">ToDo</span></span>
+        <span class="fm-sm-li"><i class="fm-sm-box" /><i class="fm-sm-tx" style="width:70%" /></span>
+        <span class="fm-sm-li"><i class="fm-sm-box" /><i class="fm-sm-tx" style="width:54%" /></span>
+      </div>
+    </div>
+  </div>
+)}

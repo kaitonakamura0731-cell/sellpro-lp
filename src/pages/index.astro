@@ -1,0 +1,1173 @@
+---
+// SellPro LP — exa-1（exaBase寄せ・忠実再現派）
+// コンテンツは bold版（site/src/pages/index.astro）と同一。デザインのみ exaBase 調に再構成。
+// 一次情報: SellPro説明資料 2026.05.19。コピーは全て資料の事実に基づく
+// ルート配置。アセット参照は logos/... product/... の相対パス
+import "../styles/exa.css";
+import CtaBand from "../components/CtaBandExa.astro";
+import FloatingBanner from "../components/FloatingBanner.astro";
+import FeatureMock from "../components/FeatureMock.astro";
+// 導入インタビューはコンテンツファイル方式（CMS）。編集は src/data/interviews.json で行う。
+// 各エントリの sample:true はサンプル注記/SAMPLEチップの表示制御。実物に差し替えたら false にする。
+import interviews from "../data/interviews.json";
+// 導入企業ロゴ・FAQはコンテンツファイル方式（CMS）。編集は src/data/logos.json / faqs.json で行う。
+import logos from "../data/logos.json";
+import faqs from "../data/faqs.json";
+
+const meta = {
+  title: "SellPro（セルプロ）| スライド・議事録作成を自動化するAIエージェント - One StepS",
+  description:
+    "スライド資料と議事録の作成をAIが代行。トンマナ学習で自社フォーマットのまま生成。資料作成工数を約30〜70%削減（※当社調べ）するAIエージェント「SellPro」。",
+};
+
+// 導入企業ロゴウォール 17社（harvest-map.json の logos セクション準拠）
+// - ADIロゴは帝国不動産（teikoku.png）と同一企業のため重複掲載しない
+// - pending: true は正式支給待ち。CSS の [data-pending]::after 1ルール削除で全バッジ解除
+// → src/data/logos.json に外出し済み（上部の import logos を参照）
+
+// 主な機能（資料 page-04 の記載を書き起こし）
+const featureGroups = [
+  {
+    label: "スライドAI",
+    en: "SLIDE AI",
+    items: [
+      {
+        no: "01",
+        viz: "prompt",
+        title: "指示だけで、資料が完成",
+        body: "内容を伝えるだけで生成。手元のドキュメントのスライド化も可能です。",
+      },
+      {
+        no: "02",
+        viz: "layout",
+        title: "構成・デザインの自動最適化",
+        body: "AIが構成を組み立て、デザインも整えます。",
+      },
+      {
+        no: "03",
+        viz: "tonmana",
+        title: "トンマナ・テンプレート設定",
+        body: "設定したトンマナは生成スライドへ自動反映されます。",
+      },
+    ],
+  },
+  {
+    label: "議事録AI",
+    en: "MINUTES AI",
+    items: [
+      {
+        no: "04",
+        viz: "transcribe",
+        title: "文字起こしから議事録まで3〜5分程度",
+        body: "自動文字起こしから議事録作成まで一気通貫。",
+      },
+      {
+        no: "05",
+        viz: "diarize",
+        title: "高度な話者識別と整理",
+        body: "「誰が・何を言ったか」を正確に識別・整理します。",
+      },
+      {
+        no: "06",
+        viz: "summary",
+        title: "テンプレート議事録・要約",
+        body: "テンプレートに沿った議事録の作成・要約ができます。",
+      },
+    ],
+  },
+];
+
+// 選ばれる理由（課題織り込み型・資料 page-04/06/12/13 の事実から構成）
+const reasons = [
+  {
+    no: "01",
+    viz: "copypaste",
+    title: "「AIで作って、自社フォーマットにコピペし直す」を、ゼロに。",
+    body: "普段のpptxを上げるだけで、レイアウト・カラー・フォントをAIが自動学習。最初から自社トンマナで直接生成するので、体裁直しがいりません。",
+    fact: "pptxのアップロードでレイアウト・ブランドカラー・フォントルールを学習（説明資料記載）。",
+  },
+  {
+    no: "02",
+    viz: "speaker",
+    title: "「誰が・何を言ったか」まで残る議事録。",
+    body: "録音から文字起こし→議事録まで3〜5分程度※。話者を識別し、決定事項・ToDoの抽出まで続けられます。",
+    fact: "当社調べ。話者識別を含むテンプレート要約は5〜10分程度。",
+  },
+  {
+    no: "03",
+    viz: "noimage",
+    title: "画像生成を、あえて載せない。",
+    body: "Web画像の参照もAI画像生成も搭載しない設計。著作権の観点から、企業が安心して使える範囲に機能を絞っています。",
+    fact: "「使ってよいか判断に迷う素材」を最初から生まない構造です。",
+  },
+  {
+    no: "04",
+    viz: "standard",
+    title: "属人化した資料作成を、再現できるプロセスに。",
+    body: "不動産・建設業界（約750名）の事例では、営業ごとに品質が異なっていた説明資料づくりを標準化しました。",
+    fact: "導入時はトンマナ設定から伴走します。",
+  },
+];
+
+// 活用シーン8項目（資料 page-05 の書き起こし）
+const scenesSlide = [
+  "営業提案資料のたたき台作成",
+  "社内説明資料・企画資料の作成",
+  "マニュアル・ナレッジ資料の整備",
+  "既存資料をもとにしたアップデート",
+];
+const scenesMinutes = [
+  "商談・会議の録音から自動で議事録を作成",
+  "話者ごとに「誰が何を言ったか」を整理",
+  "決定事項・ToDoを自動で抽出",
+  "議事録をもとに次回提案資料を作成",
+];
+
+// 用途別生成3種（資料 page-07/08/09）
+const usecaseTypes = [
+  {
+    no: "A",
+    title: "リサーチ・分析レポート",
+    body: "市場調査／競合分析／社内報告資料",
+    img: "product/usecase-report.png",
+    alt: "SellProで生成したリサーチ・分析レポートの例（日本のIT・スタートアップ産業史の表紙スライド）",
+  },
+  {
+    no: "B",
+    title: "提案・説明スライド",
+    body: "営業提案／社内共有／サービス説明",
+    img: "product/usecase-proposal.png",
+    alt: "SellProで生成した提案・説明スライドの例（サービス説明資料）",
+  },
+  {
+    no: "C",
+    title: "販促・チラシ風資料",
+    body: "サービス紹介チラシ／1枚営業資料",
+    img: "product/usecase-flyer.png",
+    alt: "SellProで生成した販促・チラシ風資料の例（1枚もののサービス紹介資料）",
+  },
+];
+
+// インタビューのサンプル注記/SAMPLEチップは、sample:true のエントリが1件以上あるときだけ表示する。
+// 全エントリを実物（sample:false）に差し替えると、帯とチップは自動で消える。
+const hasSampleInterview = interviews.some((iv) => iv.sample === true);
+
+// FAQ（資料 Q&Aページの書き起こし。JSON-LD FAQPage と同一テキスト）
+// → src/data/faqs.json に外出し済み（上部の import faqs を参照）
+// 料金・トライアル・導入期間は資料に正式情報がないため、実質同文の3問を1問に統合した非断定回答
+//（料金の桁感・初期費用有無の開示可否は要確認 → 田山さんへ照会。正式情報の受領後に個別回答へ再分割して差し替える）。
+
+const ldSoftware = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "SellPro",
+  alternateName: "セルプロ",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  description: meta.description,
+  publisher: {
+    "@type": "Organization",
+    name: "株式会社One StepS",
+    url: "https://onesteps.co.jp/",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "東京都港区",
+      streetAddress: "南青山3-8-40 青山センタービル2F-20",
+    },
+  },
+};
+
+const ldFaq = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{meta.title}</title>
+    <meta name="description" content={meta.description} />
+    <!-- OGP: og:image は本番ドメイン確定後に絶対URLへ差し替える -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={meta.title} />
+    <meta property="og:description" content={meta.description} />
+    <meta property="og:image" content="product/og.png" />
+    <meta property="og:site_name" content="SellPro（セルプロ）" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="logos/sellpro.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <script type="application/ld+json" set:html={JSON.stringify(ldSoftware)} is:inline></script>
+    <script type="application/ld+json" set:html={JSON.stringify(ldFaq)} is:inline></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="#top" aria-label="SellPro トップへ">
+          <img src="logos/sellpro.svg" alt="SellPro（セルプロ）ロゴ" width="489" height="140" />
+        </a>
+        <!-- CASE.md「アンカーナビ少なめ」準拠: 常時表示は3本+CTAに絞り、全アンカーはメニュー内に収容 -->
+        <nav class="header-nav" aria-label="ページ内ナビゲーション">
+          <a href="#features">機能</a>
+          <a href="#cases">事例</a>
+          <a href="#faq">FAQ</a>
+          <a href="/docs/">資料</a>
+          <a class="btn btn-vivid" href="/contact/">お問い合わせ</a>
+        </nav>
+        <!-- 軽量ハンバーガー（details/summary。JSなしでも開閉可能） -->
+        <details class="header-menu">
+          <summary aria-label="メニュー">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+              <path d="M3 6h18M3 12h18M3 18h18" stroke="#16335f" stroke-width="2.2" stroke-linecap="round"></path>
+            </svg>
+          </summary>
+          <nav class="hm-panel" aria-label="セクション一覧">
+            <a href="#reasons">選ばれる理由</a>
+            <a href="#features">機能</a>
+            <a href="#usecases">活用シーン</a>
+            <a href="#logos">導入企業</a>
+            <a href="#cases">事例</a>
+            <a href="#interview">インタビュー</a>
+            <a href="#faq">FAQ</a>
+            <a href="/docs/">資料</a>
+            <a href="/contact/">お問い合わせ</a>
+          </nav>
+        </details>
+      </div>
+    </header>
+
+    <main id="top">
+      <!-- exaBase文法: ヒーロー + 数値バッジ を1枚の青帯に載せる -->
+      <div class="hero-band">
+        <!-- 2026-06-11 田山さんFB「TOPは元（初回納品版）が良かった」: 生成背景画像を撤去し、初回納品のCSSグラデーション帯に復元 -->
+        <!-- 1. ヒーロー -->
+        <section class="hero">
+          <!-- SP配置(U1): h1テキスト(58%)+製品画像(42%)を上段の2カラムに、リード/CTA/noteは下段に全幅。
+               PCは hero-grid の grid-template-areas で従来の左右2カラムを完全再現（PCデザインは不変）。 -->
+          <div class="container hero-grid">
+            <div class="hero-head">
+              <h1>
+                <span class="h1-main">スライドも、<br />議事録も、<br /><em>AIが代行。</em></span>
+                <span class="h1-sub">
+                  スライド・議事録AIエージェント <strong>「SellPro（セルプロ）」</strong> by&nbsp;One&nbsp;StepS
+                </span>
+              </h1>
+            </div>
+            <div class="hero-visual">
+              <!-- 「SellPro ダッシュボード」タグは田山さんFBで削除（2026-06-11） -->
+              <div class="frame">
+                <img
+                  src="product/hero-devices.png"
+                  alt="SellProのダッシュボード画面。ラップトップとスマートフォンでの表示イメージ"
+                  width="569"
+                  height="505"
+                  loading="eager"
+                />
+              </div>
+            </div>
+            <div class="hero-body">
+              <p class="hero-lead">
+                資料作成の工数を<span class="pct">約30〜70%</span><span style="white-space: nowrap">削減<sup>※</sup>。</span>
+              </p>
+              <p class="hero-note">※ 当社調べ。削減効果は資料の種類・内容により異なります。</p>
+              <div class="hero-cta">
+                <a class="btn btn-vivid" href="/contact/">導入の相談をする</a>
+                <a class="ghost" href="/contact/?type=資料請求">資料請求</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. 数値バッジ帯（エンブレム風） -->
+        <section class="stats" aria-labelledby="stats-h">
+          <div class="container">
+            <!-- 金月桂樹エンブレムは撤去（2026-06-10 レビュー反映）。金色はSAMPLEチップ等の警告系のみに限定 -->
+            <h2 class="stats-label" id="stats-h">導入効果</h2>
+            <ul class="stats-grid">
+              <li class="stat">
+                <div class="stat-label">資料作成工数を削減</div>
+                <div class="stat-num">約30<span class="unit">〜</span>70<span class="unit">%</span><sup>※1</sup></div>
+                <div class="stat-mini">提案書・社内資料など、種類を問わず効果を発揮</div>
+              </li>
+              <li class="stat">
+                <div class="stat-label">メーカー業界（約7,000名）<br />社内説明スライド作成</div>
+                <div class="stat-num">7<span class="unit">時間</span><span class="arrow">→</span>4<span class="unit">時間</span><sup>※2</sup></div>
+                <!-- 図解1: before/after横棒バー（白地ミニカード + 青バー） -->
+                <div class="stat-bars" role="img" aria-label="従来7時間が、SellPro導入後は4時間に短縮。約43%削減（※2）">
+                  <div class="bar-row">
+                    <span class="bar-tag">従来</span>
+                    <div class="bar-track"><div class="bar before"><span class="bar-val">7時間</span></div></div>
+                  </div>
+                  <div class="bar-row">
+                    <span class="bar-tag">SellPro</span>
+                    <div class="bar-track">
+                      <div class="bar after" style="--w: 57%"><span class="bar-val">4時間</span></div>
+                      <span class="bar-badge">約43%削減<sup>※2</sup></span>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li class="stat">
+                <div class="stat-label">不動産・建設業界（約750名）<br />購入検討者向け説明資料</div>
+                <div class="stat-num">3<span class="unit">時間</span><span class="arrow">→</span>1<span class="unit">時間</span><sup>※3</sup></div>
+                <div class="stat-bars" role="img" aria-label="従来3時間が、SellPro導入後は1時間に短縮。約67%削減（※3）">
+                  <div class="bar-row">
+                    <span class="bar-tag">従来</span>
+                    <div class="bar-track"><div class="bar before"><span class="bar-val">3時間</span></div></div>
+                  </div>
+                  <div class="bar-row">
+                    <span class="bar-tag">SellPro</span>
+                    <div class="bar-track">
+                      <div class="bar after" style="--w: 33%"><span class="bar-val">1時間</span></div>
+                      <span class="bar-badge">約67%削減<sup>※3</sup></span>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li class="stat">
+                <div class="stat-label">文字起こしから<br />議事録完成までの目安</div>
+                <div class="stat-num">3<span class="unit">〜</span>5<span class="unit">分</span><sup>※4</sup></div>
+                <div class="stat-mini">録音をアップするだけ。整文・要約まで一気通貫</div>
+              </li>
+            </ul>
+            <ul class="stats-notes">
+              <li>※1〜※4 いずれも当社調べ。削減効果は資料の種類・内容により異なります。詳細は活用事例をご覧ください。</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      <!-- 3. セキュリティ信頼帯（exaBase: ヒーロー直後・グレースケールで控えめに） -->
+      <section class="trust" aria-labelledby="trust-h">
+        <div class="container">
+          <!-- 出典: 説明資料Q&A記載のセキュリティ対策（制作根拠メモ。画面には出さない） -->
+          <div class="trust-head">
+            <h2 id="trust-h">企業利用を前提とした設計。</h2>
+            <span class="trust-head-line" aria-hidden="true"></span>
+          </div>
+          <dl class="trust-grid">
+            <div class="trust-item">
+              <span class="trust-icon" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- server rack -->
+                  <rect x="4" y="5" width="20" height="6" rx="1.5" stroke="#5ECFEA" stroke-width="1.5"/>
+                  <rect x="4" y="13" width="20" height="6" rx="1.5" stroke="#5ECFEA" stroke-width="1.5"/>
+                  <circle cx="21" cy="8" r="1" fill="#5ECFEA"/>
+                  <circle cx="21" cy="16" r="1" fill="#5ECFEA"/>
+                  <line x1="14" y1="21" x2="14" y2="24" stroke="#5ECFEA" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="10" y1="24" x2="18" y2="24" stroke="#5ECFEA" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <dt>AWS日本リージョン</dt>
+              <dd>国内データセンターで処理</dd>
+            </div>
+            <div class="trust-item">
+              <span class="trust-icon" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- lock -->
+                  <rect x="7" y="13" width="14" height="11" rx="2" stroke="#5ECFEA" stroke-width="1.5"/>
+                  <path d="M10 13V10a4 4 0 0 1 8 0v3" stroke="#5ECFEA" stroke-width="1.5" stroke-linecap="round"/>
+                  <circle cx="14" cy="18.5" r="1.5" fill="#5ECFEA"/>
+                </svg>
+              </span>
+              <dt>暗号化通信</dt>
+              <dd>通信はTLSで暗号化</dd>
+            </div>
+            <div class="trust-item">
+              <span class="trust-icon" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- shield with X -->
+                  <path d="M14 4L6 7v7c0 4.5 3.5 8.5 8 9.5 4.5-1 8-5 8-9.5V7L14 4z" stroke="#5ECFEA" stroke-width="1.5" stroke-linejoin="round"/>
+                  <line x1="11" y1="11" x2="17" y2="17" stroke="#5ECFEA" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="17" y1="11" x2="11" y2="17" stroke="#5ECFEA" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <dt>AI学習に不使用</dt>
+              <dd>入力データ・生成資料とも学習に利用しません</dd>
+            </div>
+            <div class="trust-item">
+              <span class="trust-icon" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- checklist -->
+                  <rect x="6" y="4" width="16" height="20" rx="2" stroke="#5ECFEA" stroke-width="1.5"/>
+                  <line x1="10" y1="10" x2="18" y2="10" stroke="#5ECFEA" stroke-width="1.5" stroke-linecap="round"/>
+                  <polyline points="10,15 12,17 16,13" stroke="#5ECFEA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <line x1="10" y1="20" x2="15" y2="20" stroke="#5ECFEA" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <dt>チェックシート対応</dt>
+              <dd>個社の項目に回答対応</dd>
+            </div>
+            <div class="trust-item">
+              <span class="trust-icon" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- shield with check -->
+                  <path d="M14 4L6 7v7c0 4.5 3.5 8.5 8 9.5 4.5-1 8-5 8-9.5V7L14 4z" stroke="#5ECFEA" stroke-width="1.5" stroke-linejoin="round"/>
+                  <polyline points="10.5,14 13,16.5 18,11.5" stroke="#5ECFEA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <dt>ISMS準拠体制</dt>
+              <dd>ISMS認証 申請準備中（準拠体制で運用中）</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- 4. 導入企業ロゴウォール -->
+      <section class="logos" id="logos" aria-labelledby="logos-h">
+        <div class="container">
+          <div class="sec-head">
+            <span class="idx" aria-hidden="true">01</span>
+            <h2 id="logos-h">導入企業</h2>
+          </div>
+          <div class="logo-marquee">
+            <div class="logo-track">
+              <ul class="logo-set">
+                {
+                  logos.map((l) => (
+                    <li class="logo-tile" data-pending={l.pending ? "" : undefined}>
+                      <img src={`logos/${l.file}`} alt={`${l.name}のロゴ`} title={l.name} />
+                    </li>
+                  ))
+                }
+              </ul>
+              <!-- シームレスループ用の複製セット（読み上げ対象外） -->
+              <ul class="logo-set" aria-hidden="true">
+                {
+                  logos.map((l) => (
+                    <li class="logo-tile" data-pending={l.pending ? "" : undefined}>
+                      <img src={`logos/${l.file}`} alt="" />
+                    </li>
+                  ))
+                }
+              </ul>
+            </div>
+          </div>
+          <p class="logos-note">※ 受託開発でのお付き合いも含めます。</p>
+        </div>
+      </section>
+
+      <!-- 5. 選ばれる理由 -->
+      <section class="reasons" id="reasons" aria-labelledby="reasons-h">
+        <div class="container">
+          <div class="sec-head">
+            <span class="idx" aria-hidden="true">02</span>
+            <h2 id="reasons-h">SellProが選ばれる理由</h2>
+          </div>
+          <div class="reason-list">
+            {
+              reasons.map((r) => (
+                <article class="reason">
+                  <div class="reason-top">
+                    <div class="reason-main">
+                      <span class="reason-no">{r.no}</span>
+                      <h3>{r.title}</h3>
+                      <p>{r.body}</p>
+                    </div>
+                    <div class="reason-viz" aria-hidden="true">
+                      {/* viz=copypaste: pptx → SellProコア → 自社トンマナのスライド の横ミニフロー */}
+                      {r.viz === "copypaste" && (
+                        <div class="rv-flow">
+                          <span class="rv-file">
+                            <svg viewBox="0 0 34 40" fill="none">
+                              <path d="M5 2h17l9 9v27H5z" fill="#fff" stroke="#16335f" stroke-width="2" />
+                              <path d="M22 2v9h9" fill="none" stroke="#16335f" stroke-width="2" />
+                              <rect x="5" y="24" width="26" height="11" fill="#cdd7e3" />
+                              <text x="18" y="32" text-anchor="middle" font-size="6.5" font-weight="700" fill="#5a6b80" font-family="sans-serif">.pptx</text>
+                            </svg>
+                            <em>普段の資料</em>
+                          </span>
+                          <span class="rv-ar"><svg viewBox="0 0 18 12"><path d="M2 6h12m0 0-4-4m4 4-4 4" stroke="#1c6fd2" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+                          <span class="rv-core">SellPro<br />AI</span>
+                          <span class="rv-ar"><svg viewBox="0 0 18 12"><path d="M2 6h12m0 0-4-4m4 4-4 4" stroke="#1c6fd2" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+                          <span class="rv-out">
+                            <span class="rvo-frame">
+                              <span class="rvo-bar" />
+                              <span class="rvo-line rvo-l1" />
+                              <span class="rvo-line rvo-l2" />
+                            </span>
+                            <em>自社トンマナで生成</em>
+                          </span>
+                        </div>
+                      )}
+                      {/* viz=speaker(U4): 「議事録の行」リスト。各行=話者チップ(色分け)+発言バー2本を左揃えで整列し、
+                          PC/SP両方で「文字起こしの画面」と一目で分かる形に */}
+                      {r.viz === "speaker" && (
+                        <div class="rv-mins">
+                          <div class="rvm-bar" aria-hidden="true">
+                            <span class="rvm-dot" /><span class="rvm-dot" /><span class="rvm-dot" />
+                            <span class="rvm-ttl">議事録</span>
+                          </div>
+                          <div class="rvm-row">
+                            <span class="rvm-chip rvm-a">田中</span>
+                            <span class="rvm-lines">
+                              <i style="width:92%" /><i style="width:64%" />
+                            </span>
+                          </div>
+                          <div class="rvm-row">
+                            <span class="rvm-chip rvm-b">佐藤</span>
+                            <span class="rvm-lines">
+                              <i style="width:80%" /><i style="width:48%" />
+                            </span>
+                          </div>
+                          <div class="rvm-row">
+                            <span class="rvm-chip rvm-a">田中</span>
+                            <span class="rvm-lines">
+                              <i style="width:72%" /><i style="width:56%" />
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {/* viz=noimage: 盾＋遮断のSVG */}
+                      {r.viz === "noimage" && (
+                        <div class="rv-shield">
+                          <svg viewBox="0 0 88 88" fill="none">
+                            <path d="M44 8 18 16v22c0 16 11 27 26 31 15-4 26-15 26-31V16L44 8Z" fill="rgba(28,111,210,.06)" stroke="#1c6fd2" stroke-width="2.5" stroke-linejoin="round" />
+                            <rect x="33" y="36" width="22" height="17" rx="2.5" fill="none" stroke="#16335f" stroke-width="2.2" />
+                            <circle cx="44" cy="44" r="3" fill="none" stroke="#16335f" stroke-width="2" />
+                            <path d="M36 36v-3a8 8 0 0 1 16 0v3" fill="none" stroke="#16335f" stroke-width="2.2" />
+                          </svg>
+                          <div class="rv-block">
+                            <span class="rvb-chip">Web画像参照</span>
+                            <span class="rvb-chip">AI画像生成</span>
+                          </div>
+                        </div>
+                      )}
+                      {/* viz=standard: バラバラ→揃った before/after ミニ図 */}
+                      {r.viz === "standard" && (
+                        <div class="rv-std">
+                          <span class="rvs-group rvs-before">
+                            <em>属人化</em>
+                            <span class="rvs-slides">
+                              <span class="rvs-sl" style="--c:#c7b6e0;--r:-6deg" />
+                              <span class="rvs-sl" style="--c:#e0c2a6;--r:3deg" />
+                              <span class="rvs-sl" style="--c:#a8c6e6;--r:-2deg" />
+                            </span>
+                          </span>
+                          <span class="rv-ar"><svg viewBox="0 0 18 12"><path d="M2 6h12m0 0-4-4m4 4-4 4" stroke="#1c6fd2" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+                          <span class="rvs-group rvs-after">
+                            <em>標準化</em>
+                            <span class="rvs-slides">
+                              <span class="rvs-sl" style="--c:#1c6fd2" />
+                              <span class="rvs-sl" style="--c:#1c6fd2" />
+                              <span class="rvs-sl" style="--c:#1c6fd2" />
+                            </span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {r.fact && (
+                    <div class="reason-side">
+                      <p class="reason-fact">
+                        <span class="rf-mark" aria-hidden="true">※</span>
+                        <span class="rf-text">{r.fact}</span>
+                      </p>
+                    </div>
+                  )}
+                </article>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. 主な機能 -->
+      <section class="features" id="features" aria-labelledby="features-h">
+        <div class="container">
+          <div class="sec-head">
+            <span class="idx" aria-hidden="true">03</span>
+            <h2 id="features-h">主な機能</h2>
+            <p class="sec-lead">スライドAIと議事録AI。資料にまつわる前後の業務を、ひとつのエージェントで。</p>
+          </div>
+          <div class="feature-group">
+            <div class="fg-label">
+              {featureGroups[0].label}
+              <span class="en">{featureGroups[0].en}</span>
+            </div>
+            <div class="feature-cards">
+              {
+                featureGroups[0].items.map((f) => (
+                  <article class="feature-card has-mock">
+                    <div class="fc-mock">
+                      <FeatureMock viz={f.viz} />
+                    </div>
+                    <div class="fc-text">
+                      <h3>{f.title}</h3>
+                      <p>{f.body}</p>
+                    </div>
+                  </article>
+                ))
+              }
+            </div>
+            <!-- スライドAIの実UIスクショ（ブラウザ風フレーム・大きめ） -->
+            <figure class="ui-shot">
+              <div class="ui-window">
+                <div class="ui-bar">
+                  <span class="ui-dot" /><span class="ui-dot" /><span class="ui-dot" />
+                  <span class="ui-url">SellPro — スライド編集</span>
+                </div>
+                <img
+                  src="product/ui-slide-editor.png"
+                  alt="SellProのスライド編集画面。スライド一覧から「スライド生成」「PPTX一括出力」、各スライドの「AIで編集」操作ができる実際の管理画面"
+                  width="563"
+                  height="347"
+                />
+              </div>
+              <figcaption><span class="ui-live">実際の画面</span>指示に沿って生成し、その場で「AIで編集」。PDF・PPTXでそのまま書き出せます。</figcaption>
+            </figure>
+          </div>
+          <div class="feature-group">
+            <div class="fg-label">
+              {featureGroups[1].label}
+              <span class="en">{featureGroups[1].en}</span>
+            </div>
+            <!-- 図解3: 議事録AI 5ノード横フロー（白カード + 青アイコンスクエアに再着色） -->
+            <div
+              class="mflow"
+              role="img"
+              aria-label="議事録AIの流れ：会議を録音、自動文字起こし、誰が・何を言ったかの話者識別、議事録・ToDo抽出までが3〜5分程度（※4）。続けて次回提案資料の作成へつながります。"
+            >
+              <div class="mf-node">
+                <span class="mf-ic">
+                  <svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+                    <rect x="15" y="5" width="10" height="17" rx="5"></rect>
+                    <path d="M10 17a10 10 0 0 0 20 0"></path>
+                    <path d="M20 27v6M14 33h12"></path>
+                  </svg>
+                </span>
+                <span class="mf-lb">会議を録音</span>
+              </div>
+              <div class="mf-arrow">
+                <svg viewBox="0 0 20 20" fill="none"><path d="M6 3l8 7-8 7" stroke="#1c6fd2" stroke-width="3"></path></svg>
+              </div>
+              <div class="mf-core">
+                <div class="mf-bracket"><span class="mf-badge">3〜5分<sup>※4</sup></span></div>
+                <div class="mf-core-nodes">
+                  <div class="mf-node">
+                    <span class="mf-ic">
+                      <svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+                        <path d="M8 16v8M14 11v18M20 14v12M26 7v26M32 16v8"></path>
+                      </svg>
+                    </span>
+                    <span class="mf-lb">自動文字起こし</span>
+                  </div>
+                  <div class="mf-arrow">
+                    <svg viewBox="0 0 20 20" fill="none"><path d="M6 3l8 7-8 7" stroke="#1c6fd2" stroke-width="3"></path></svg>
+                  </div>
+                  <div class="mf-node">
+                    <span class="mf-ic">
+                      <svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+                        <rect x="3" y="3" width="10" height="8" rx="2"></rect>
+                        <rect x="27" y="3" width="10" height="8" rx="2"></rect>
+                        <text x="8" y="9.6" text-anchor="middle" font-size="7" font-weight="700" fill="#fff" stroke="none" font-family="sans-serif">A</text>
+                        <text x="32" y="9.6" text-anchor="middle" font-size="7" font-weight="700" fill="#fff" stroke="none" font-family="sans-serif">B</text>
+                        <circle cx="12" cy="19" r="4"></circle>
+                        <path d="M4 32c0-4.5 3.5-7 8-7s8 2.5 8 7"></path>
+                        <circle cx="28" cy="19" r="4"></circle>
+                        <path d="M20 32c0-4.5 3.5-7 8-7s8 2.5 8 7"></path>
+                      </svg>
+                    </span>
+                    <span class="mf-lb">誰が・何を<br />言ったか</span>
+                  </div>
+                  <div class="mf-arrow">
+                    <svg viewBox="0 0 20 20" fill="none"><path d="M6 3l8 7-8 7" stroke="#1c6fd2" stroke-width="3"></path></svg>
+                  </div>
+                  <div class="mf-node">
+                    <span class="mf-ic">
+                      <svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+                        <path d="M9 4h15l8 8v24H9z"></path>
+                        <path d="M24 4v8h8"></path>
+                        <path d="M13.5 19l2 2 3.5-4M22 20h7"></path>
+                        <path d="M13.5 26l2 2 3.5-4M22 27h7"></path>
+                        <path d="M13.5 33l2 2 3.5-4M22 34h7"></path>
+                      </svg>
+                    </span>
+                    <span class="mf-lb">議事録・<br />ToDo抽出</span>
+                  </div>
+                </div>
+              </div>
+              <div class="mf-arrow">
+                <svg viewBox="0 0 20 20" fill="none"><path d="M6 3l8 7-8 7" stroke="#1c6fd2" stroke-width="3"></path></svg>
+              </div>
+              <div class="mf-node">
+                <span class="mf-ic">
+                  <svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+                    <rect x="3" y="8" width="34" height="22"></rect>
+                    <path d="M3 14h34"></path>
+                    <path d="M8 20h14M8 25h9"></path>
+                  </svg>
+                </span>
+                <span class="mf-lb">次回提案<br />資料を作成</span>
+              </div>
+            </div>
+            <div class="feature-cards">
+              {
+                featureGroups[1].items.map((f) => (
+                  <article class="feature-card has-mock">
+                    <div class="fc-mock">
+                      <FeatureMock viz={f.viz} />
+                    </div>
+                    <div class="fc-text">
+                      <h3>{f.title}</h3>
+                      <p>{f.body}</p>
+                    </div>
+                  </article>
+                ))
+              }
+            </div>
+            <!-- 議事録AIの実UIスクショ（ブラウザ風フレーム・大きめ） -->
+            <figure class="ui-shot">
+              <div class="ui-window">
+                <div class="ui-bar">
+                  <span class="ui-dot" /><span class="ui-dot" /><span class="ui-dot" />
+                  <span class="ui-url">SellPro — 議事録</span>
+                </div>
+                <img
+                  src="product/ui-minutes.png"
+                  alt="SellProの議事録画面。録音の再生と並べて、話者ごとに識別された文字起こしと翻訳が表示される実際の管理画面"
+                  width="1011"
+                  height="392"
+                />
+              </div>
+              <figcaption><span class="ui-live">実際の画面</span>録音と並べて、話者を識別した文字起こしを表示。翻訳もワンクリックです。</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- 中間CTAはクライアント指示（2026-06-10）により設置しない。CTAは最下部の1箇所のみ -->
+
+      <!-- 7. トンマナ自動学習 3ステップ -->
+      <section class="tonmana" id="tonmana" aria-labelledby="tonmana-h">
+        <div class="container">
+          <div class="sec-head">
+            <span class="idx" aria-hidden="true">04</span>
+            <h2 id="tonmana-h">トンマナ自動学習 — 「生成＝完成」の体験へ</h2>
+          </div>
+
+          <div class="tm-steps">
+            <div class="tm-step">
+              <span class="st-no">STEP 1</span>
+              <div class="tm-art">
+                <!-- 自作SVG: pptxファイル（ネイビー線 + 青ラベルに再着色） -->
+                <svg viewBox="0 0 64 72" width="64" height="72" role="img" aria-label="pptxファイル">
+                  <path d="M10 4h32l12 12v52H10z" fill="#fff" stroke="#16335f" stroke-width="3"></path>
+                  <path d="M42 4v12h12" fill="none" stroke="#16335f" stroke-width="3"></path>
+                  <rect x="10" y="40" width="44" height="18" fill="#1c6fd2"></rect>
+                  <text x="32" y="53" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="sans-serif">.pptx</text>
+                </svg>
+              </div>
+              <h3>普段の資料を<br />そのままアップロード</h3>
+              <p>事前の整理は不要です。</p>
+            </div>
+            <div class="tm-arrow" aria-hidden="true">
+              <svg viewBox="0 0 34 34" fill="none"><path d="M8 5l14 12L8 29" stroke="#1c6fd2" stroke-width="5"></path></svg>
+            </div>
+            <div class="tm-step">
+              <span class="st-no">STEP 2</span>
+              <div class="tm-art"><div class="ai-circle">SellPro<br />AI</div></div>
+              <h3>AIがデザインルールを<br />自動解析・学習</h3>
+              <div class="ai-chips" aria-label="学習する要素">
+                <span>レイアウト</span><span>カラー</span><span>フォント</span>
+              </div>
+            </div>
+            <div class="tm-arrow" aria-hidden="true">
+              <svg viewBox="0 0 34 34" fill="none"><path d="M8 5l14 12L8 29" stroke="#1c6fd2" stroke-width="5"></path></svg>
+            </div>
+            <div class="tm-step">
+              <span class="st-no">STEP 3</span>
+              <div class="tm-art">
+                <!-- 自作CSS: 自社トンマナのスライドモック -->
+                <div class="browser" role="img" aria-label="自社トンマナで生成されたスライドのイメージ">
+                  <div class="b-bar"><i></i><i></i><i></i></div>
+                  <div class="b-body">
+                    <div class="bl title"></div>
+                    <div class="bl"></div>
+                    <div class="bl short"></div>
+                  </div>
+                </div>
+              </div>
+              <h3>貴社のトンマナで<br />スライドを直接生成</h3>
+            </div>
+          </div>
+
+          <p class="tm-learn-lead">AIが学習・再現する、3つの要素。</p>
+          <ul class="tm-learn">
+            <li>
+              <div class="tl-viz" aria-hidden="true">
+                <span class="tl-wire">
+                  <span class="tlw-head" />
+                  <span class="tlw-row"><i style="width:56%" /><i class="tlw-logo" /></span>
+                  <span class="tlw-cols"><i /><i /></span>
+                </span>
+              </div>
+              <b>レイアウトのクセ</b>
+              <span>見出しの位置、テキストボックスの余白、ロゴの固定位置</span>
+            </li>
+            <li>
+              <div class="tl-viz" aria-hidden="true">
+                <span class="tl-swatches">
+                  <span style="--c:#1c6fd2"><em>Main</em></span>
+                  <span style="--c:#16335f"><em>Sub</em></span>
+                  <span style="--c:#5ecfea"><em>Accent</em></span>
+                </span>
+              </div>
+              <b>ブランドカラー</b>
+              <span>コーポレートカラーを反映した配色や、図解・グラフの色使い</span>
+            </li>
+            <li>
+              <div class="tl-viz" aria-hidden="true">
+                <span class="tl-font">
+                  <span class="tlf-big">Aa</span>
+                  <span class="tlf-jp">あ ア 亜</span>
+                </span>
+              </div>
+              <b>フォントルール</b>
+              <span>タイトルや本文のフォント種類、文字サイズ、強調表現</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 8. 用途別生成 + 活用シーン -->
+      <section class="usecases" id="usecases" aria-labelledby="usecases-h">
+        <div class="container">
+          <div class="sec-head">
+            <span class="idx" aria-hidden="true">05</span>
+            <h2 id="usecases-h">用途に合わせて、最適な資料を自動生成</h2>
+            <p class="sec-lead">実際にSellProで生成した資料の例です。</p>
+          </div>
+          {/* R5: 代表1枚（提案・説明スライド）をブラウザフレームで大きく見せ、残り2種はサムネ+ラベルに格下げ */}
+          <div class="uc-feature">
+            <figure class="uc-hero">
+              <div class="ui-window">
+                <div class="ui-bar">
+                  <span class="ui-dot" /><span class="ui-dot" /><span class="ui-dot" />
+                  <span class="ui-url">SellPro — {usecaseTypes[1].title}</span>
+                </div>
+                <div class="uc-hero-shot">
+                  <span class="uc-real">実際の生成例</span>
+                  <img src={usecaseTypes[1].img} alt={usecaseTypes[1].alt} width="800" height="480" />
+                </div>
+              </div>
+              <figcaption>
+                <span class="uc-no">{usecaseTypes[1].no}</span>
+                <span class="uc-cap-text"><b>{usecaseTypes[1].title}</b>Use Case: {usecaseTypes[1].body}</span>
+              </figcaption>
+            </figure>
+            <ul class="uc-thumbs">
+              {[usecaseTypes[0], usecaseTypes[2]].map((u) => (
+                <li class="uc-thumb">
+                  <span class="uc-thumb-shot">
+                    <img src={u.img} alt={u.alt} width="800" height="480" />
+                  </span>
+                  <span class="uc-thumb-meta">
+                    <b><span class="uc-no uc-no-sm">{u.no}</span>{u.title}</b>
+                    <small>{u.body}</small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div class="scene-wrap">
+            <h3>商談から次の提案まで、ひと続きで。</h3>
+            <p class="scene-sub">録音するだけで議事録になり、その内容がそのまま次回の提案スライドに。SellProひとつで完結します。</p>
+            <!-- 活用ストーリー: 実画像入り3ステップ（録音→議事録の実画面→提案スライドの実物） -->
+            <div class="story">
+              <div class="story-step">
+                <span class="story-no">STEP 1</span>
+                <div class="story-card story-rec" role="img" aria-label="商談・会議を録音している様子のイメージ">
+                  <span class="rec-dot" aria-hidden="true" />
+                  <span class="rec-mic" aria-hidden="true">
+                    <svg viewBox="0 0 40 40" fill="none" stroke="#1c6fd2" stroke-width="2.6" stroke-linecap="round">
+                      <rect x="15" y="5" width="10" height="18" rx="5" />
+                      <path d="M9 18a11 11 0 0 0 22 0" />
+                      <path d="M20 29v6M13 35h14" />
+                    </svg>
+                  </span>
+                  <span class="rec-wave" aria-hidden="true">
+                    {Array.from({ length: 13 }).map((_, i) => (
+                      <i style={`height:${24 + Math.abs(Math.sin(i * 1.1)) * 64}%`} />
+                    ))}
+                  </span>
+                  <span class="rec-time">REC 24:18</span>
+                </div>
+                <p class="story-cap"><b>商談・会議を録音</b>アプリに音声をアップロードするだけ。</p>
+              </div>
+              <span class="story-ar" aria-hidden="true"><svg viewBox="0 0 22 14"><path d="M2 7h16m0 0-5-5m5 5-5 5" stroke="#1c6fd2" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+              <div class="story-step">
+                <span class="story-no">STEP 2</span>
+                <div class="story-card story-img">
+                  <span class="story-badge">3〜5分で完成</span>
+                  <img src="product/ui-minutes.png" alt="SellProが生成した議事録の実画面。話者識別付きの文字起こしと翻訳が並ぶ" width="1011" height="392" />
+                </div>
+                <p class="story-cap"><b>3〜5分で議事録に</b>話者を識別し、決定事項・ToDoまで整理。<span class="story-live">実際の画面</span></p>
+              </div>
+              <span class="story-ar" aria-hidden="true"><svg viewBox="0 0 22 14"><path d="M2 7h16m0 0-5-5m5 5-5 5" stroke="#1c6fd2" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+              <div class="story-step">
+                <span class="story-no">STEP 3</span>
+                <div class="story-card story-img">
+                  <span class="story-badge">そのまま生成</span>
+                  <img src="product/usecase-proposal.png" alt="SellProが生成した次回提案スライドの実物例" width="800" height="480" />
+                </div>
+                <p class="story-cap"><b>次回提案スライドに</b>議事録をもとに、提案資料をAIが作成。<span class="story-live">実際の生成例</span></p>
+              </div>
+            </div>
+            <p class="story-loop"><span class="story-loop-ar" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M13 8a5 5 0 1 1-1.5-3.5M13 2v3h-3" stroke="#1c6fd2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg></span>提案が次の商談を生み、また議事録へ。<b>SellPro＝1つのエージェント</b>が、この循環を回し続けます。</p>
+
+            <h3 class="scene-h2">こんなシーンで使われています</h3>
+            {/* R5: featuresと重複のため、2カラム箇条書き → チップ羅列1行ずつに圧縮 */}
+            <div class="scene-chips">
+              <div class="scene-chip-row">
+                <span class="sc-label">スライド生成</span>
+                <ul>{scenesSlide.map((s) => <li>{s}</li>)}</ul>
+              </div>
+              <div class="scene-chip-row">
+                <span class="sc-label">文字起こし・議事録</span>
+                <ul>{scenesMinutes.map((s) => <li>{s}</li>)}</ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10. 活用事例 -->
+      <section class="cases" id="cases" aria-labelledby="cases-h">
+        <div class="container">
+          <hr class="sec-divider" />
+          <div class="sec-head">
+            <span class="idx" aria-hidden="true">06</span>
+            <h2 id="cases-h">活用事例</h2>
+          </div>
+          <!-- 図解2: 業務フロー比較（従来7工程=グレー vs 導入後3工程=青のシェブロン図） -->
+          <figure
+            class="flowcomp"
+            aria-label="業務フロー比較：従来7工程の資料作成業務が、SellPro導入後はプロンプト入力・AIによる代行・微修正の3工程になる図"
+          >
+            <h3 class="fc-title">業務フロー比較 — 7工程が、3工程に。</h3>
+            <div class="fc-row">
+              <p class="fc-band fc-band-before">従来の業務フロー｜7工程</p>
+              <ol class="fc-chevrons fc-before">
+                <li class="chv chv-first">目的整理・ストーリー作成</li>
+                <li class="chv">タイトル作成</li>
+                <li class="chv">情報収集</li>
+                <li class="chv">デザイン方向性の選定</li>
+                <li class="chv">フレーム作成</li>
+                <li class="chv">デザイン作成</li>
+                <li class="chv">アウトプット微修正</li>
+              </ol>
+            </div>
+            <div class="fc-connector" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none"><path d="M3 6l7 8 7-8" stroke="#1c6fd2" stroke-width="3"></path></svg>
+              <span class="fc-chip"><img src="logos/sellpro.svg" alt="" width="489" height="140" /></span>
+            </div>
+            <div class="fc-row">
+              <p class="fc-band fc-band-after">SellPro導入後｜3工程</p>
+              <ol class="fc-chevrons fc-after">
+                <li class="chv3 chv3-first"><span class="chv3-in">プロンプト入力</span></li>
+                <li class="chv3-mid">
+                  <svg class="chv3-bg" viewBox="0 0 400 84" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path
+                      d="M1.5 1.5 H386 L398.5 42 L386 82.5 H1.5 L14 42 Z"
+                      fill="rgba(28,111,210,0.08)"
+                      stroke="#1c6fd2"
+                      stroke-width="2.5"
+                      stroke-dasharray="8 6"
+                      vector-effect="non-scaling-stroke"
+                    ></path>
+                  </svg>
+                  <span class="chv3-mid-body">
+                    <b>手間のかかる作業をAIが全て代行</b>
+                    <small>リサーチ・構成・デザイン・資料化（約30〜70%削減<sup>※1</sup>）</small>
+                  </span>
+                </li>
+                <li class="chv3"><span class="chv3-in">微修正・仕上げ</span></li>
+              </ol>
+            </div>
+          </figure>
+          <div class="case-grid">
+            <article class="case-card">
+              <span class="case-tag">CASE 1｜メーカー業界（約7,000名）</span>
+              <h3>新旧資料の比較から、社内説明スライドを作成</h3>
+              <div class="case-num">7<span class="unit">時間</span><span class="arrow">→</span>4<span class="unit">時間</span><sup>※2</sup></div>
+              <span class="case-cut">約43%削減</span>
+              <p class="case-quote">
+                「新旧情報整理」と「説明構成設計」の工程が大幅に削減。修正依頼の往復も減少しました。
+              </p>
+            </article>
+            <article class="case-card">
+              <span class="case-tag">CASE 2｜不動産・建設業界（約750名）</span>
+              <h3>購入検討者向け説明資料のベースを作成</h3>
+              <div class="case-num">3<span class="unit">時間</span><span class="arrow">→</span>1<span class="unit">時間</span><sup>※3</sup></div>
+              <span class="case-cut">約67%削減</span>
+              <p class="case-quote">
+                営業ごとに品質が異なっていた属人業務を、再現可能な業務プロセスへ標準化しました。
+              </p>
+            </article>
+          </div>
+          <p class="cases-note">
+            ※1〜※3 いずれも当社調べ。削減効果は資料の種類・内容により異なります。
+          </p>
+        </div>
+      </section>
+
+      <!-- 10.5 導入時インタビュー（サンプル。実インタビュー受領後に差し替え） -->
+      <section class="interview" id="interview" aria-labelledby="interview-h">
+        <div class="container">
+          <div class="sec-head">
+            <span class="idx" aria-hidden="true">07</span>
+            <h2 id="interview-h">導入時インタビュー</h2>
+            <!-- サンプル掲載中のため非断定リード。実インタビュー受領後は
+                 「導入を担当された方に、導入前の課題から効果までを伺いました。」へ戻す -->
+            <p class="sec-lead">導入前の課題から効果までを、Q&A形式でご紹介します。</p>
+          </div>
+          {hasSampleInterview && (
+            <p class="iv-sample-note">
+              <strong>※ インタビュー内容はサンプルです。</strong>実際の導入企業の声に差し替え予定です。
+            </p>
+          )}
+          <div class="iv-grid">
+            {
+              interviews.map((iv) => (
+                <article class="iv-card">
+                  {iv.sample && <span class="iv-sample-chip" aria-hidden="true">SAMPLE</span>}
+                  <header class="iv-head">
+                    <span class="iv-avatar" aria-hidden="true">
+                      <img src={iv.avatar} alt="" width="120" height="120" />
+                    </span>
+                    <div class="iv-meta">
+                      <p class="iv-org">{iv.org}</p>
+                      <p class="iv-scale">{iv.scale}｜{iv.role}</p>
+                    </div>
+                  </header>
+                  <dl class="iv-qa">
+                    {iv.qa.map((item) => (
+                      <div class="iv-item">
+                        <dt>
+                          <span class="iv-q">Q</span>
+                          {item.q}
+                        </dt>
+                        <dd>{item.a}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </article>
+              ))
+            }
+          </div>
+          <p class="iv-note">※ 当社調べ。削減効果は資料の種類・内容により異なります。</p>
+        </div>
+      </section>
+
+      <!-- 11. FAQ -->
+      <section class="faq" id="faq" aria-labelledby="faq-h">
+        <div class="container">
+          <div class="sec-head">
+            <span class="idx" aria-hidden="true">08</span>
+            <h2 id="faq-h">よくある質問</h2>
+            <p class="sec-lead">その他のご質問は、お問い合わせフォームからお寄せください。</p>
+          </div>
+          <div class="faq-list">
+            {
+              faqs.map((f, i) => (
+                <details class="faq-item" open={i === 0}>
+                  <summary>
+                    <span class="q">Q{i + 1}</span>
+                    {f.q}
+                    <span class="mark" aria-hidden="true">＋</span>
+                  </summary>
+                  <p class="a">{f.a}</p>
+                </details>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- 12. 最終CTA（中間と同一コンポーネント） -->
+      <CtaBand />
+
+    </main>
+
+    <FloatingBanner />
+
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <a class="brand" href="#top">
+              <img src="logos/sellpro.svg" alt="SellPro（セルプロ）ロゴ" width="489" height="140" />
+            </a>
+            <p>スライド・議事録作成を自動化するAIエージェント。</p>
+          </div>
+          <dl class="footer-company">
+            <dt>運営会社</dt>
+            <dd>株式会社One StepS（ワンステップス）</dd>
+            <dd>東京都港区南青山3-8-40 青山センタービル2F-20</dd>
+            <dd><a href="https://onesteps.co.jp/" target="_blank" rel="noopener">onesteps.co.jp</a></dd>
+            <!-- プライバシーポリシー正式URLは未確認（onesteps.co.jp/privacy はソフト404のためコーポレートトップへ暫定退避。
+                 田山さんへ照会中、確定後に正式URLへ差し替え） -->
+            <dd><a href="https://onesteps.co.jp/" target="_blank" rel="noopener">プライバシーポリシー</a></dd>
+            <dd><a href="/docs/">資料ダウンロード</a></dd>
+          </dl>
+        </div>
+        <p class="copyright">&copy; 2026 One StepS Inc.</p>
+      </div>
+    </footer>
+
+    <script is:inline>
+      // モバイルメニュー（details/summary）: リンク選択・外側タップで閉じる。JSなしでも開閉自体は機能する
+      (function () {
+        var menu = document.querySelector(".header-menu");
+        if (!menu) return;
+        menu.querySelectorAll(".hm-panel a").forEach(function (a) {
+          a.addEventListener("click", function () {
+            menu.removeAttribute("open");
+          });
+        });
+        document.addEventListener("click", function (e) {
+          if (menu.hasAttribute("open") && !menu.contains(e.target)) {
+            menu.removeAttribute("open");
+          }
+        });
+      })();
+    </script>
+    <script is:inline>
+      // 図解1（導入効果バー）: ビューポート進入で 0% → 実値へ伸長。
+      // prefers-reduced-motion 時・非対応ブラウザではアニメさせず最初から実値で表示する。
+      (function () {
+        var groups = document.querySelectorAll(".stat-bars");
+        if (!groups.length) return;
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        if (!("IntersectionObserver" in window)) return;
+        groups.forEach(function (g) { g.classList.add("js-anim"); });
+        var io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (en) {
+              if (en.isIntersecting) {
+                en.target.classList.add("in");
+                io.unobserve(en.target);
+              }
+            });
+          },
+          { threshold: 0.35 }
+        );
+        groups.forEach(function (g) { io.observe(g); });
+      })();
+    </script>
+  </body>
+</html>
