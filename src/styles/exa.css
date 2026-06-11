@@ -3112,11 +3112,15 @@ section {
   }
 }
 
+@media (max-width: 760px) {
+  /* スマホでは詳細な事例バー2枚を非表示にし、要約値だけを見せる。 */
+  .stat:has(.stat-bars) {
+    display: none;
+  }
+}
+
 @media (max-width: 560px) {
-  /* U2: 読み順が崩れる2×2をやめ1列に統一。順序はDOMどおり
-     約30〜70% → メーカー7→4h → 不動産3→1h → 3〜5分。
-     主役カード(7→4h/3→1h)のみバー図解を残し、他はバー/miniを隠して
-     数字+ラベルだけのコンパクトカードに（縦長対策）。 */
+  /* U2: 読み順が崩れる2×2をやめ1列に統一。 */
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -3134,14 +3138,6 @@ section {
     gap: 8px 12px;
   }
 
-  /* 主役（バー有り）カードは縦構成を維持 */
-  .stat:has(.stat-bars) {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 16px 14px 14px;
-  }
-
   /* miniパネルは非表示（数字+ラベルだけのコンパクト化） */
   .stat-mini {
     display: none;
@@ -3157,26 +3153,6 @@ section {
     justify-content: flex-end;
     font-size: clamp(24px, 7vw, 30px);
     white-space: nowrap;
-  }
-
-  /* バー有りカードは数値を中央に戻す */
-  .stat:has(.stat-bars) .stat-num {
-    justify-content: center;
-  }
-
-  .stat-bars {
-    padding: 10px 12px 12px;
-    max-width: 320px;
-  }
-
-  .bar-tag {
-    width: 48px;
-    font-size: 11px;
-  }
-
-  .bar-badge {
-    font-size: 10px;
-    padding: 2px 6px;
   }
 
   .hero-cta .btn-vivid,
@@ -4059,7 +4035,7 @@ section {
     flex: none;
     width: 44%;
     min-height: 0;
-    height: auto;
+    height: 200px;
     border-bottom: 0;
     border-right: 1px solid var(--line);
     padding: 16px 14px;
@@ -4077,7 +4053,7 @@ section {
 }
 
 @media (max-width: 560px) {
-  .fc-mock { width: 42%; padding: 12px 10px; }
+  .fc-mock { width: 42%; height: 200px; padding: 12px 10px; }
   .fc-text { padding: 13px 14px; }
   .fc-text h3 { font-size: 14.5px; line-height: 1.45; }
   .fc-text p { font-size: 12.5px; }
@@ -4087,7 +4063,8 @@ section {
   .fm-spark svg { width: 13px; height: 13px; }
   .fm-send { width: 20px; height: 20px; }
   .fm-send svg { width: 13px; height: 13px; }
-  .fm-thumbs { gap: 5px; }
+  .fm-thumbs { gap: 5px; grid-template-columns: repeat(3, 1fr); }
+  .fm-th { aspect-ratio: 4 / 3; padding: 5px; border-radius: 8px; }
   .reason-viz { padding: 14px; }
   .story-card { border-radius: 12px; }
   .ui-url { display: none; }
@@ -4107,7 +4084,9 @@ section {
   }
   .feature-card.has-mock .fm-layout .fm-canvas {
     width: 100%;
-    aspect-ratio: 3 / 2;
+    height: 72px;
+    aspect-ratio: unset;
+    flex: none;
   }
   /* tonmana: コントロール+矢印+スライドを縦積み */
   .feature-card.has-mock .fm-tonmana {
@@ -4127,15 +4106,22 @@ section {
     flex: none;
     padding: 8px 10px;
   }
+  .feature-card.has-mock .fm-sm-doc {
+    padding: 8px 12px;
+    gap: 5px;
+  }
+  .feature-card.has-mock .fm-sm-sec {
+    gap: 5px;
+  }
   /* transcribe: fm-badge を overflow:hidden内の右下に再配置 */
   .feature-card.has-mock .fm-badge {
     top: auto;
     bottom: 6px;
     right: 6px;
   }
-  /* thumbs: 縦1列に切り替えてサムネを確実に収める */
+  /* thumbs: promptモックを固定高内に収める */
   .feature-card.has-mock .fm-thumbs {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 4px;
   }
   .feature-card.has-mock .fm-th {
