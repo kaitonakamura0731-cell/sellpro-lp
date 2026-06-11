@@ -684,6 +684,19 @@ section {
   line-height: 1.5;
 }
 
+/* 4カラム時はバー幅が狭く、時間ラベルと削減バッジが重なるため下段へ逃がす */
+@media (min-width: 1021px) {
+  .bar-track:has(.bar-badge) {
+    margin-bottom: 24px;
+  }
+
+  .bar-track:has(.bar-badge) .bar-badge {
+    top: calc(100% + 5px);
+    right: 0;
+    transform: none;
+  }
+}
+
 /* JSあり時のみ 0% → 実値アニメ */
 .stat-bars.js-anim .bar {
   width: 0;
