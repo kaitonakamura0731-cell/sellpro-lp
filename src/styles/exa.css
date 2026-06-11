@@ -898,6 +898,7 @@ section {
   /* 4カードをピクセル単位で同寸に（SPでは auto に戻す） */
   grid-auto-rows: 1fr;
   gap: 22px;
+  min-width: 0;
 }
 
 .reason {
@@ -908,6 +909,7 @@ section {
   padding: 32px 32px 28px;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 /* クライアント要望: B案は装飾的な連番(01/02…)を出さない */
