@@ -2468,29 +2468,29 @@ section {
     padding: 44px 0 28px;
   }
 
-  /* U1: SPヒーロー上段を「h1テキスト(58%)+製品画像(42%)」の2カラムに。
-     リード/CTA/noteは body として下段に全幅で続く。画像は小さくても右上に置く。 */
+  /* SP: 小さな右上配置は窮屈に見えるため、見出し→製品画像→訴求の自然な縦流れにする */
   .hero-grid {
-    grid-template-columns: 58% 42%;
+    grid-template-columns: 1fr;
     grid-template-areas:
-      "head visual"
-      "body body";
-    grid-template-rows: auto auto;
-    column-gap: 14px;
-    row-gap: 0;
-    align-items: start;
+      "head"
+      "visual"
+      "body";
+    grid-template-rows: auto auto auto;
+    row-gap: 18px;
+    align-items: center;
     justify-items: stretch;
   }
 
   .hero-head {
     margin-bottom: 0;
-    align-self: center;
+    align-self: start;
   }
 
   .hero-visual {
+    width: min(82vw, 360px);
     max-width: 100%;
-    margin: 0;
-    align-self: start;
+    margin: 0 auto;
+    align-self: center;
   }
 
   /* SPでは白いカード枠を外し、デバイス素材を青背景へ自然に載せる */
@@ -2507,24 +2507,23 @@ section {
   }
 
   .hero-visual .frame img {
-    filter: drop-shadow(0 14px 24px rgba(8, 32, 74, 0.28));
-    transform: scale(1.08) translateY(2px);
+    filter: drop-shadow(0 18px 28px rgba(8, 32, 74, 0.28));
+    transform: none;
     transform-origin: center;
   }
 
-  /* 58%列に収めるため h1主見出しを1段縮小（フォントは犠牲にしすぎない） */
   .hero-head h1 .h1-main {
-    font-size: clamp(27px, 7.4vw, 36px);
-    line-height: 1.36;
+    font-size: clamp(38px, 11vw, 48px);
+    line-height: 1.22;
   }
 
   .hero-head h1 .h1-sub {
     margin-top: 12px;
-    font-size: 13.5px;
+    font-size: 14.5px;
   }
 
   .hero-body {
-    margin-top: 22px;
+    margin-top: 0;
   }
 
   .sec-head {
