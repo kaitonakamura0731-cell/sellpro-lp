@@ -454,8 +454,6 @@ section {
 
 .hero-visual {
   position: relative;
-  justify-self: center;
-  width: 100%;
 }
 
 .hero-visual .tag {
@@ -501,8 +499,6 @@ section {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 12px;
-  outline: 1px solid rgba(255, 255, 255, 0.32);
   filter: drop-shadow(0 28px 46px rgba(8, 32, 74, 0.38));
 }
 
@@ -2474,11 +2470,10 @@ section {
   }
 
   .hero-visual {
-    width: min(88vw, 520px);
+    width: min(82vw, 360px);
     max-width: 100%;
-    margin: 4px auto 8px;
+    margin: 0 auto;
     align-self: center;
-    justify-self: center;
   }
 
   /* SPでは白いカード枠を外し、デバイス素材を青背景へ自然に載せる */
