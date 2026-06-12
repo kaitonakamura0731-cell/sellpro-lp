@@ -696,7 +696,7 @@
         { key: "banner", title: "バナー", description: "常時表示バナーの表示、画像、リンク" },
         { key: "docs", title: "資料", description: "資料ページに出すPDFと準備中表示" },
         { key: "interviews", title: "インタビュー", description: "導入インタビューの会社情報とQ&A" },
-        { key: "logos", title: "ロゴ", description: "導入企業ロゴと確認中バッジ" },
+        { key: "logos", title: "ロゴ", description: "導入企業ロゴ" },
         { key: "faqs", title: "FAQ", description: "トップページのよくある質問" },
       ];
 
@@ -944,7 +944,6 @@
             <div class="form-grid">
               ${textField("会社名", `${index}.name`, logo.name)}
               ${textField("ロゴファイル名", `${index}.file`, logo.file, "company.png")}
-              <div class="field wide">${checkboxField("確認中バッジを出す", `${index}.pending`, logo.pending)}</div>
             </div>
           </article>
         `).join("");
@@ -1089,7 +1088,7 @@
         if (action === "add-interview") {
           return { sample: true, org: "", scale: "", role: "導入ご担当者", avatar: "product/", qa: [{ q: "", a: "" }] };
         }
-        if (action === "add-logo") return { file: "", name: "", pending: true };
+        if (action === "add-logo") return { file: "", name: "" };
         if (action === "add-faq") return { q: "", a: "" };
         if (action === "add-qa") return { q: "", a: "" };
         return {};
@@ -1179,6 +1178,7 @@
         if (key === "logos") {
           if (!Array.isArray(data) || data.length === 0) errors.push("ロゴを1件以上登録してください");
           data.forEach((item, index) => {
+            delete item.pending;
             need(item.name, `ロゴ${index + 1}の会社名を入力してください`);
             need(item.file, `ロゴ${index + 1}のファイル名を入力してください`);
           });

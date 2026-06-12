@@ -472,28 +472,26 @@ section {
 
 .hero-visual .frame {
   position: relative;
-  background: #fff;
-  border: 1px solid rgba(94, 207, 234, 0.45);
-  border-radius: 18px;
-  padding: 16px;
-  /* 半透明白のリングを重ねて「ガラスの厚み」を表現（blur不使用） */
-  box-shadow:
-    0 24px 60px rgba(8, 32, 74, 0.35),
-    0 0 0 5px rgba(255, 255, 255, 0.12);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  isolation: isolate;
 }
 
-/* 背景の光線から白枠を浮かせる薄いスクリム（blur不使用・透明感維持。中心濃→外周透明の放射でハード矩形を回避） */
+/* 白い外枠を使わず、製品素材の周囲だけに青い環境光を敷く。 */
 .hero-visual .frame::before {
   content: "";
   position: absolute;
-  inset: -30px;
+  inset: -18% -12% -16%;
   z-index: -1;
-  border-radius: 32px;
+  border-radius: 999px;
   background: radial-gradient(
-    120% 120% at 50% 50%,
-    rgba(20, 40, 80, 0.22) 0%,
-    rgba(20, 40, 80, 0.14) 55%,
-    rgba(20, 40, 80, 0) 100%
+    88% 92% at 58% 54%,
+    rgba(94, 207, 234, 0.2) 0%,
+    rgba(28, 111, 210, 0.16) 45%,
+    rgba(20, 40, 80, 0) 78%
   );
 }
 
@@ -501,6 +499,7 @@ section {
   display: block;
   width: 100%;
   height: auto;
+  filter: drop-shadow(0 28px 46px rgba(8, 32, 74, 0.38));
 }
 
 /* ============ 数値バッジ帯（白カード + 青の大型数字。青帯上に載せる） ============ */
@@ -815,8 +814,7 @@ section {
 
 .logo-marquee {
   overflow: hidden;
-  /* 「確認中」バッジ（top:-8px）が overflow:hidden で欠けないよう上下に余白を確保 */
-  padding: 12px 0;
+  padding: 8px 0;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
 }
@@ -853,21 +851,6 @@ section {
   max-width: 100%;
   max-height: 46px;
   object-fit: contain;
-}
-
-.logo-tile[data-pending]::after {
-  content: "確認中";
-  position: absolute;
-  top: -8px;
-  right: -6px;
-  background: #f2f5f8;
-  border: 1px solid #d7dee7;
-  color: #7c8794;
-  font-size: 10px;
-  font-weight: 700;
-  border-radius: 999px;
-  padding: 1px 9px;
-  line-height: 1.7;
 }
 
 @keyframes marq {
@@ -3121,6 +3104,7 @@ section {
 
 @media (max-width: 760px) {
   /* スマホでは詳細な事例バー2枚を非表示にし、要約値だけを見せる。 */
+  .stat-detail,
   .stat:has(.stat-bars) {
     display: none;
   }

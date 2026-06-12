@@ -22,7 +22,6 @@ const meta = {
 
 // 導入企業ロゴウォール 17社（harvest-map.json の logos セクション準拠）
 // - ADIロゴは帝国不動産（teikoku.png）と同一企業のため重複掲載しない
-// - pending: true は正式支給待ち。CSS の [data-pending]::after 1ルール削除で全バッジ解除
 // → src/data/logos.json に外出し済み（上部の import logos を参照）
 
 // 主な機能（資料 page-04 の記載を書き起こし）
@@ -253,8 +252,7 @@ const ldFaq = {
         <!-- 2026-06-11 田山さんFB「TOPは元（初回納品版）が良かった」: 生成背景画像を撤去し、初回納品のCSSグラデーション帯に復元 -->
         <!-- 1. ヒーロー -->
         <section class="hero">
-          <!-- SP配置: 見出し→製品画像→訴求の縦流れで、画像が浮かず自然に見える構成。
-               PCは hero-grid の grid-template-areas で従来の左右2カラムを完全再現（PCデザインは不変）。 -->
+          <!-- SP配置: 見出し→製品画像→訴求の縦流れ。PCは左右2カラムのまま、製品素材を青背景へ直接なじませる。 -->
           <div class="container hero-grid">
             <div class="hero-head">
               <h1>
@@ -300,7 +298,7 @@ const ldFaq = {
                 <div class="stat-num">約30<span class="unit">〜</span>70<span class="unit">%</span><sup>※1</sup></div>
                 <div class="stat-mini">提案書・社内資料など、種類を問わず効果を発揮</div>
               </li>
-              <li class="stat">
+              <li class="stat stat-detail">
                 <div class="stat-label">メーカー業界（約7,000名）<br />社内説明スライド作成</div>
                 <div class="stat-num">7<span class="unit">時間</span><span class="arrow">→</span>4<span class="unit">時間</span><sup>※2</sup></div>
                 <!-- 図解1: before/after横棒バー（白地ミニカード + 青バー） -->
@@ -318,7 +316,7 @@ const ldFaq = {
                   </div>
                 </div>
               </li>
-              <li class="stat">
+              <li class="stat stat-detail">
                 <div class="stat-label">不動産・建設業界（約750名）<br />購入検討者向け説明資料</div>
                 <div class="stat-num">3<span class="unit">時間</span><span class="arrow">→</span>1<span class="unit">時間</span><sup>※3</sup></div>
                 <div class="stat-bars" role="img" aria-label="従来3時間が、SellPro導入後は1時間に短縮。約67%削減（※3）">
@@ -356,7 +354,7 @@ const ldFaq = {
               <ul class="logo-set">
                 {
                   logos.map((l) => (
-                    <li class="logo-tile" data-pending={l.pending ? "" : undefined}>
+                    <li class="logo-tile">
                       <img src={`logos/${l.file}`} alt={`${l.name}のロゴ`} title={l.name} />
                     </li>
                   ))
@@ -366,7 +364,7 @@ const ldFaq = {
               <ul class="logo-set" aria-hidden="true">
                 {
                   logos.map((l) => (
-                    <li class="logo-tile" data-pending={l.pending ? "" : undefined}>
+                    <li class="logo-tile">
                       <img src={`logos/${l.file}`} alt="" />
                     </li>
                   ))

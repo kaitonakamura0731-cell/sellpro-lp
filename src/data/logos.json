@@ -13,7 +13,7 @@
   { "file": "hba.png", "name": "株式会社HBA" },
   { "file": "abdi.svg", "name": "株式会社ABDi" },
   { "file": "teikoku.png", "name": "帝国不動産" },
-  { "file": "arara.svg", "name": "アララ", "pending": true },
-  { "file": "formx.svg", "name": "FormX", "pending": true },
-  { "file": "orso.png", "name": "株式会社ORSO", "pending": true }
+  { "file": "arara.svg", "name": "アララ" },
+  { "file": "formx.svg", "name": "FormX" },
+  { "file": "orso.png", "name": "株式会社ORSO" }
 ]

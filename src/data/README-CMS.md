@@ -121,14 +121,13 @@
 ```json
 [
   { "file": "hokuriku.png", "name": "株式会社北陸銀行" },
-  { "file": "arara.svg", "name": "アララ", "pending": true }
+  { "file": "arara.svg", "name": "アララ" }
 ]
 ```
 
 - ロゴ画像は `public/logos/` に置く
 - `file` はファイル名だけを書く
-- `pending: true` で「確認中」バッジを表示
-- 正式確認後は `pending` を削除
+- 公開ページではロゴにステータスバッジを表示しない
 
 ---
 
