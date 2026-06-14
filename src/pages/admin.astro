@@ -377,17 +377,18 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       }
       .ham-tab-ico {
         flex: 0 0 auto;
-        font-size: 17px;
         width: 28px;
         height: 28px;
         display: grid;
         place-items: center;
         border-radius: 7px;
-        background: rgba(255,255,255,0.08);
-        line-height: 1;
+        background: rgba(255,255,255,0.05);
         transition: background 0.13s;
+        overflow: hidden;
       }
-      .ham-tab.is-active .ham-tab-ico { background: rgba(20,99,255,0.35); }
+      .ham-tab-ico img { filter: brightness(0.94) drop-shadow(0 1px 2px rgba(0,0,0,0.18)); }
+      .ham-tab.is-active .ham-tab-ico { background: rgba(20,99,255,0.28); }
+      .ham-tab.is-active .ham-tab-ico img { filter: brightness(1.05) drop-shadow(0 1px 3px rgba(20,99,255,0.3)); }
       .ham-tab-tx { flex: 1 1 auto; min-width: 0; }
       .ham-tab-name {
         font-size: 13px;
@@ -469,7 +470,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       .home-list {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
       }
       .home-card {
         display: flex;
@@ -479,27 +480,27 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         text-align: left;
         background: var(--card);
         border: 1px solid var(--line);
-        border-radius: var(--r-lg);
-        padding: 16px;
-        box-shadow: var(--shadow-card);
+        border-radius: 18px;
+        padding: 14px 16px;
+        box-shadow: 0 1px 2px rgba(16,23,38,0.03), 0 6px 20px rgba(16,23,38,0.05);
         transition: transform 0.15s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s;
       }
       .home-card:hover {
-        border-color: #d3dbf0;
-        box-shadow: 0 2px 4px rgba(16, 23, 38, 0.05), 0 16px 36px rgba(16, 23, 38, 0.1);
+        border-color: #cdd6f0;
+        box-shadow: 0 2px 4px rgba(16,23,38,0.04), 0 14px 32px rgba(16,23,38,0.09);
+        transform: translateY(-1px);
       }
       .home-card:active {
-        transform: scale(0.985);
+        transform: scale(0.985) translateY(0);
       }
       .home-ico {
         flex: 0 0 auto;
-        width: 50px;
-        height: 50px;
+        width: 56px;
+        height: 56px;
         display: grid;
         place-items: center;
-        font-size: 24px;
-        border-radius: 15px;
-        background: var(--blue-soft);
+        border-radius: 16px;
+        background: transparent;
       }
       .home-tx {
         flex: 1 1 auto;
@@ -1743,19 +1744,20 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       }
       .side-tab-ico {
         flex: 0 0 auto;
-        font-size: 17px;
         width: 28px;
         height: 28px;
         display: grid;
         place-items: center;
         border-radius: 7px;
-        background: rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.05);
         transition: background 0.13s;
-        line-height: 1;
+        overflow: hidden;
       }
+      .side-tab-ico img { filter: brightness(0.94) drop-shadow(0 1px 2px rgba(0,0,0,0.18)); }
       .side-tab.is-active .side-tab-ico {
-        background: rgba(20,99,255,0.35);
+        background: rgba(20,99,255,0.28);
       }
+      .side-tab.is-active .side-tab-ico img { filter: brightness(1.05) drop-shadow(0 1px 3px rgba(20,99,255,0.3)); }
       .side-tab-tx {
         flex: 1 1 auto;
         min-width: 0;
@@ -1807,8 +1809,18 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         margin: 0;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         color: var(--ink);
+      }
+      .desk-title-ico {
+        flex: 0 0 auto;
+        width: 26px;
+        height: 26px;
+        display: grid;
+        place-items: center;
+        border-radius: 7px;
+        background: var(--blue-soft);
+        overflow: hidden;
       }
       .desk-back-btn {
         display: inline-flex;
@@ -2019,31 +2031,44 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       const SECTIONS = {
         banner: {
           key: "banner", kind: "object", folder: "banner",
-          icon: "📢", name: "バナー",
+          icon: "📢", iconFile: "/admin-icons/icon-banner.png", name: "バナー",
           desc: "画面下に出る案内バナー",
         },
         docs: {
           key: "docs", kind: "array", folder: "docs",
-          icon: "📄", name: "ダウンロード資料",
+          icon: "📄", iconFile: "/admin-icons/icon-docs.png", name: "ダウンロード資料",
           desc: "資料ページに並ぶPDF",
         },
         interviews: {
           key: "interviews", kind: "array", folder: "product",
-          icon: "💬", name: "導入インタビュー",
+          icon: "💬", iconFile: "/admin-icons/icon-interviews.png", name: "導入インタビュー",
           desc: "お客様の声・Q&A",
         },
         logos: {
           key: "logos", kind: "array", folder: "logos",
-          icon: "🏢", name: "導入企業ロゴ",
+          icon: "🏢", iconFile: "/admin-icons/icon-logos.png", name: "導入企業ロゴ",
           desc: "トップに並ぶ企業ロゴ",
         },
         faqs: {
           key: "faqs", kind: "array", folder: null,
-          icon: "❓", name: "よくある質問",
+          icon: "❓", iconFile: "/admin-icons/icon-faq.png", name: "よくある質問",
           desc: "FAQ セクション",
         },
       };
       const SECTION_ORDER = ["banner", "docs", "interviews", "logos", "faqs"];
+
+      // セクションアイコン <img> を生成するヘルパ
+      // size: ピクセル数(正方形)
+      const secIconImg = (sec, size) => {
+        const img = document.createElement('img');
+        img.src = sec.iconFile;
+        img.alt = '';
+        img.width = size;
+        img.height = size;
+        img.style.cssText = `width:${size}px;height:${size}px;object-fit:contain;display:block;`;
+        img.onerror = () => { img.replaceWith(document.createTextNode(sec.icon)); };
+        return img;
+      };
 
       // =====================================================================
       // STATE
@@ -2237,7 +2262,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
             onClick: () => switchSectionFromDrawer(sid),
           }, [
             el('div', { class: 'ham-tab-inner' }, [
-              el('span', { class: 'ham-tab-ico', text: sec.icon }),
+              el('span', { class: 'ham-tab-ico' }, [secIconImg(sec, 22)]),
               el('span', { class: 'ham-tab-tx' }, [
                 el('span', { class: 'ham-tab-name', text: sec.name }),
                 el('span', { class: 'ham-tab-meta', text: metaTxt }),
@@ -2459,7 +2484,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           }
           list.appendChild(
             el("button", { class: "home-card", type: "button", onClick: () => openSection(sid) }, [
-              el("span", { class: "home-ico", text: sec.icon }),
+              el("span", { class: "home-ico" }, [secIconImg(sec, 42)]),
               el("span", { class: "home-tx" }, [
                 el("p", { class: "home-name", text: sec.name }),
                 el("p", { class: "home-desc", text: sec.desc }),
@@ -2491,7 +2516,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
 
         if (items.length === 0) {
           v.appendChild(el("div", { class: "empty" }, [
-            el("div", { class: "empty-ico", text: sec.icon }),
+            el("div", { class: "empty-ico" }, [secIconImg(sec, 48)]),
             el("p", { text: "まだ登録がありません。" }),
             el("p", { style: "font-size:13px", text: "右上の「追加」から登録できます。" }),
           ]));
@@ -3023,7 +3048,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
             }
           }, [
             el('div', { class: 'side-tab-inner' }, [
-              el('span', { class: 'side-tab-ico', text: sec.icon }),
+              el('span', { class: 'side-tab-ico' }, [secIconImg(sec, 20)]),
               el('span', { class: 'side-tab-tx' }, [
                 el('span', { class: 'side-tab-name', text: sec.name }),
                 el('span', { class: 'side-tab-meta', text: metaTxt }),
@@ -3066,7 +3091,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         const head = el('div', { class: 'desk-center-head' }, [
           el('div', { style: 'min-width:0;flex:1 1 auto' }, [
             el('h2', { class: 'desk-center-title', style: 'margin:0' }, [
-              el('span', { text: sec.icon + '  ' }),
+              el('span', { class: 'desk-title-ico' }, [secIconImg(sec, 22)]),
               el('span', { text: sec.name }),
             ]),
             el('p', { class: 'desk-section-desc', style: 'margin:2px 0 0', text: sec.desc }),
@@ -3086,7 +3111,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         const body = el('div', { class: 'desk-center-body' });
         if (items.length === 0) {
           body.appendChild(el('div', { class: 'empty' }, [
-            el('div', { class: 'empty-ico', text: sec.icon }),
+            el('div', { class: 'empty-ico' }, [secIconImg(sec, 48)]),
             el('p', { text: 'まだ登録がありません。' }),
           ]));
         } else {
@@ -3188,7 +3213,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         } else {
           const sec2 = SECTIONS[state.sectionId];
           body.appendChild(el('div', { class: 'desk-pv-empty' }, [
-            el('div', { style: 'font-size:32px;margin-bottom:8px', text: sec2 ? sec2.icon : '' }),
+            sec2 ? el('div', { style: 'margin-bottom:10px;display:flex;justify-content:center' }, [secIconImg(sec2, 40)]) : null,
             el('p', { style: 'margin:0', text: '編集する項目を選ぶとプレビューが表示されます' }),
           ]));
         }

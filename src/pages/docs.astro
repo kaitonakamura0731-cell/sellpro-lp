@@ -127,7 +127,11 @@ const ldBreadcrumb = {
                   </div>
                   <div class="doc-action">
                     {d.available ? (
-                      <a class="btn btn-vivid doc-dl" href={d.file} download>
+                      <a
+                        class="btn btn-vivid doc-dl"
+                        href={d.file.startsWith("/") ? d.file : `/${d.file}`}
+                        download
+                      >
                         ダウンロード
                       </a>
                     ) : (
