@@ -1,2480 +1,2422 @@
 ---
-// SellPro 管理ページ（最終納品版）
-// ライブプレビュー編集型 CMS。左=編集フォーム / 右=本番そっくりのライブプレビュー。
+// =============================================================================
+// SellPro コンテンツ管理（CMS） — Studio 風・モバイルファースト
 //
-// 設計方針:
-//   - 1ファイル自己完結。状態は state に集約し、描画は純粋関数で組み立てる。
-//   - 編集対象ごとの差分は FIELDS / FORMS / PREVIEWS の3レジストリに閉じ込め、
-//     共通フロー（読込・保存・検証・ステータス）はキー非依存に保つ。
-//   - GitHub トークンはブラウザに持たせない。更新は /api/admin-content 経由でサーバー側が行う。
+// 体験設計: ホーム(コンテンツ一覧) → 種別をタップ → アイテム一覧 → 編集
+//   配列型(資料/インタビュー/ロゴ/FAQ): 一覧で 追加 / 編集 / 削除 / 並び替え
+//   単体型(バナー): タップで直接編集
+//   プレビュー: 編集画面から全画面オーバーレイで実ページ忠実表示
 //
-// API契約（変更不可）:
-//   認証 = X-Admin-Password ヘッダ（sessionStorage 保持）
-//   GET  /api/admin-content?key=<banner|docs|interviews|logos|faqs> → { path, sha, data }
-//   POST 同URL body { data, sha, message } → 更新後の { path, sha, data }
+// 認証: パスワードのみ。X-Admin-Password ヘッダ + sessionStorage 保持。
+// データ: GET/POST /api/admin-content?key=...  （既存API・変更不可）
+// 画像: POST /api/admin-upload?folder=...      （アップロードAPI）
+//
+// このファイルは1ファイル自己完結。JS は論理セクションで分割:
+//   CONST / STATE / UTIL / API / UPLOAD / VIEWS / FORMS / PREVIEW / EVENTS
+// =============================================================================
+const PAGE_TITLE = "SellPro コンテンツ管理";
 ---
 
 <!doctype html>
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex,nofollow" />
-    <title>SellPro CMS</title>
-    <link rel="icon" href="/logos/sellpro.svg" type="image/svg+xml" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="format-detection" content="telephone=no" />
+    <title>{PAGE_TITLE}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap"
       rel="stylesheet"
     />
-    <style>
+
+    <style is:global>
       /* ===================================================================
-         1. TOKENS & RESET
-      =================================================================== */
+         DESIGN TOKENS
+         =================================================================== */
       :root {
-        --blue: #1c6fd2;
-        --blue-deep: #1e4fa8;
-        --blue-soft: #eaf3fc;
-        --navy: #16335f;
-        --cyan: #5ecfea;
+        --blue: #1463ff;
+        --blue-dark: #0c4ad0;
+        --blue-soft: #eef3ff;
+        --blue-ring: rgba(20, 99, 255, 0.18);
 
-        --ink: #1a2638;
-        --text: #3c4a5d;
-        --muted: #6b7a8e;
-        --line: #dde6f0;
-        --line-mid: #c8d8eb;
-        --bg: #f1f5fb;
-        --bg-alt: #f8fafd;
-        --surface: #ffffff;
+        --ink: #0e1726;
+        --ink-2: #44506a;
+        --ink-3: #8a93a6;
 
-        --danger: #c33a2b;
-        --danger-bg: #fff2f1;
-        --ok: #107a4b;
-        --ok-bg: #ecfaf4;
-        --warn: #8a6a14;
-        --warn-bg: #fffbef;
+        --bg: #f4f6fb;
+        --card: #ffffff;
+        --line: #e6e9f2;
+        --line-2: #eef0f6;
 
-        --r-sm: 8px;
-        --r: 10px;
-        --r-lg: 14px;
-        --sh: 0 2px 8px rgba(22, 51, 95, 0.07);
-        --sh-pop: 0 8px 28px rgba(22, 51, 95, 0.13);
+        --danger: #d6294a;
+        --danger-soft: #fdeef1;
+        --ok: #138a5a;
+
+        --r-lg: 22px;
+        --r-md: 16px;
+        --r-sm: 11px;
+
+        --shadow-card: 0 1px 2px rgba(16, 23, 38, 0.04), 0 8px 24px rgba(16, 23, 38, 0.06);
+        --shadow-pop: 0 12px 40px rgba(16, 23, 38, 0.16);
+        --shadow-bar: 0 1px 0 var(--line);
+
+        --maxw: 760px;
+        --bar-h: 60px;
+        --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+        --safe-t: env(safe-area-inset-top, 0px);
+        --safe-b: env(safe-area-inset-bottom, 0px);
       }
 
+      /* ===================================================================
+         RESET — モバイル横はみ出しを構造的に封じる
+         =================================================================== */
       *,
       *::before,
       *::after {
         box-sizing: border-box;
-        margin: 0;
-        padding: 0;
       }
-
       html,
       body {
-        height: 100%;
+        margin: 0;
+        padding: 0;
+        max-width: 100%;
+        overflow-x: hidden; /* 横スクロール根絶 */
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+      body {
+        font-family: "Zen Kaku Gothic New", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        line-height: 1.7;
+        -webkit-font-smoothing: antialiased;
+        word-break: break-word;
+        overflow-wrap: anywhere; /* 長いURL/文字列でも溢れさせない */
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: inherit;
+      }
+      input,
+      textarea,
+      select {
+        font-family: inherit;
+        font-size: 16px; /* iOS のフォーカス時ズーム防止 */
+        color: inherit;
+        max-width: 100%;
+      }
+      a {
+        color: var(--blue);
+        text-decoration: none;
+      }
+      :focus-visible {
+        outline: 3px solid var(--blue-ring);
+        outline-offset: 2px;
       }
 
-      body {
-        font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
+      /* ===================================================================
+         APP SHELL
+         =================================================================== */
+      .app {
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+      .wrap {
+        width: 100%;
+        max-width: var(--maxw);
+        margin-inline: auto;
+        padding-inline: clamp(14px, 4vw, 28px);
+      }
+
+      /* --- Top bar -------------------------------------------------------- */
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: saturate(1.4) blur(8px);
+        -webkit-backdrop-filter: saturate(1.4) blur(8px);
+        box-shadow: var(--shadow-bar);
+        padding-top: var(--safe-t);
+      }
+      .bar-inner {
+        height: var(--bar-h);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        max-width: var(--maxw);
+        margin-inline: auto;
+        padding-inline: clamp(10px, 3.5vw, 20px);
+      }
+      .bar-title {
+        flex: 1 1 auto;
+        min-width: 0; /* flex 子の溢れ防止 */
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: center;
+      }
+      .bar-back {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 38px;
+        padding: 0 12px 0 8px;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--blue);
+        background: var(--blue-soft);
+        transition: background 0.15s var(--ease), transform 0.1s var(--ease);
+      }
+      .bar-back:active {
+        transform: scale(0.96);
+      }
+      .bar-back svg {
+        width: 16px;
+        height: 16px;
+      }
+      .bar-save {
+        flex: 0 0 auto;
+        height: 38px;
+        padding: 0 16px;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        background: var(--blue);
+        box-shadow: 0 4px 14px var(--blue-ring);
+        transition: background 0.15s var(--ease), transform 0.1s var(--ease), opacity 0.15s;
+      }
+      .bar-save:active {
+        transform: scale(0.96);
+      }
+      .bar-save[disabled] {
+        opacity: 0.5;
+        pointer-events: none;
+        box-shadow: none;
+      }
+      .bar-slot {
+        flex: 0 0 auto;
+        min-width: 38px;
+        display: flex;
+        justify-content: flex-end;
+      }
+      .bar-ghost {
         font-size: 13px;
-        line-height: 1.65;
-        color: var(--ink);
-        background: var(--bg);
-        -webkit-font-smoothing: antialiased;
+        font-weight: 700;
+        color: var(--ink-3);
+        padding: 8px 10px;
+        border-radius: 999px;
+      }
+
+      /* --- Main scroll area ---------------------------------------------- */
+      .main {
+        flex: 1 1 auto;
+        padding-top: 18px;
+        padding-bottom: calc(48px + var(--safe-b));
+      }
+      .view {
+        animation: viewin 0.32s var(--ease) both;
+      }
+      @keyframes viewin {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .view {
+          animation: none;
+        }
+      }
+
+      .page-head {
+        margin: 4px 0 18px;
+      }
+      .page-eyebrow {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--blue);
+        margin: 0 0 4px;
+      }
+      .page-title {
+        font-size: clamp(22px, 6vw, 28px);
+        font-weight: 900;
+        letter-spacing: -0.01em;
+        margin: 0;
+        line-height: 1.3;
+      }
+      .page-sub {
+        margin: 6px 0 0;
+        font-size: 14px;
+        color: var(--ink-2);
+      }
+
+      /* ===================================================================
+         HOME — コンテンツ種別カード
+         =================================================================== */
+      .home-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .home-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        text-align: left;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        padding: 16px;
+        box-shadow: var(--shadow-card);
+        transition: transform 0.15s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s;
+      }
+      .home-card:hover {
+        border-color: #d3dbf0;
+        box-shadow: 0 2px 4px rgba(16, 23, 38, 0.05), 0 16px 36px rgba(16, 23, 38, 0.1);
+      }
+      .home-card:active {
+        transform: scale(0.985);
+      }
+      .home-ico {
+        flex: 0 0 auto;
+        width: 50px;
+        height: 50px;
+        display: grid;
+        place-items: center;
+        font-size: 24px;
+        border-radius: 15px;
+        background: var(--blue-soft);
+      }
+      .home-tx {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .home-name {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0;
+        line-height: 1.4;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .home-desc {
+        font-size: 12.5px;
+        color: var(--ink-3);
+        margin: 2px 0 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .home-meta {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--ink-3);
+      }
+      .home-count {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ink-2);
+        white-space: nowrap;
+      }
+      .home-chev {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11.5px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .pill-on {
+        color: var(--ok);
+        background: #e7f6ef;
+      }
+      .pill-off {
+        color: var(--ink-3);
+        background: #eef0f6;
+      }
+      .pill-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      /* ===================================================================
+         LIST — 配列型アイテム一覧
+         =================================================================== */
+      .list-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+      .list-count {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ink-3);
+      }
+      .btn-add {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 42px;
+        padding: 0 18px;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        background: var(--blue);
+        box-shadow: 0 4px 14px var(--blue-ring);
+        transition: transform 0.1s var(--ease), background 0.15s;
+      }
+      .btn-add:active {
+        transform: scale(0.96);
+      }
+      .btn-add svg {
+        width: 17px;
+        height: 17px;
+      }
+
+      .item-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .item-card {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 12px;
+        box-shadow: var(--shadow-card);
+      }
+      .item-thumb {
+        flex: 0 0 auto;
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        background: var(--blue-soft);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        color: var(--ink-3);
+        font-size: 20px;
+      }
+      .item-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 4px;
+      }
+      .item-thumb.is-logo {
+        background: #fff;
+        border: 1px solid var(--line-2);
+      }
+      .item-main {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .item-tap {
+        display: block;
+        text-align: left;
+        width: 100%;
+        min-width: 0;
+      }
+      .item-title {
+        font-size: 15px;
+        font-weight: 700;
+        margin: 0;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
         overflow: hidden;
       }
-
-      a:focus-visible,
-      button:focus-visible,
-      input:focus-visible,
-      textarea:focus-visible {
-        outline: 2px solid var(--cyan);
-        outline-offset: 2px;
-        border-radius: 4px;
+      .item-sub {
+        font-size: 12.5px;
+        color: var(--ink-3);
+        margin: 3px 0 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .item-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 6px;
+      }
+      .tag {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #eef0f6;
+        color: var(--ink-2);
+      }
+      .tag-sample {
+        background: #fff4e5;
+        color: #b06d00;
+      }
+      .item-actions {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .ic-btn {
+        width: 34px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        border-radius: 9px;
+        color: var(--ink-2);
+        background: #f2f4fa;
+        transition: background 0.15s, color 0.15s, transform 0.1s;
+      }
+      .ic-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+      .ic-btn:active {
+        transform: scale(0.9);
+      }
+      .ic-btn:disabled {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+      .ic-btn.is-danger {
+        color: var(--danger);
+        background: var(--danger-soft);
+      }
+      .item-arrows {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
       }
 
-      .is-hidden {
+      /* ===================================================================
+         FORM — 編集画面
+         =================================================================== */
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .field {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 15px 15px 16px;
+        box-shadow: var(--shadow-card);
+      }
+      .field-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 700;
+        margin: 0 0 3px;
+      }
+      .field-help {
+        font-size: 12px;
+        color: var(--ink-3);
+        margin: 0 0 10px;
+        line-height: 1.6;
+      }
+      .field-help:last-child {
+        margin-bottom: 0;
+      }
+      .input,
+      .textarea {
+        width: 100%;
+        display: block;
+        background: #fbfcfe;
+        border: 1.5px solid var(--line);
+        border-radius: var(--r-sm);
+        padding: 12px 13px;
+        line-height: 1.6;
+        transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+      }
+      .input:focus,
+      .textarea:focus {
+        outline: none;
+        border-color: var(--blue);
+        background: #fff;
+        box-shadow: 0 0 0 4px var(--blue-ring);
+      }
+      .textarea {
+        resize: vertical;
+        min-height: 96px;
+      }
+
+      /* toggle */
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .toggle-tx {
+        min-width: 0;
+      }
+      .switch {
+        flex: 0 0 auto;
+        position: relative;
+        width: 52px;
+        height: 31px;
+        border-radius: 999px;
+        background: #d5dae6;
+        transition: background 0.2s var(--ease);
+      }
+      .switch[aria-checked="true"] {
+        background: var(--blue);
+      }
+      .switch::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s var(--ease);
+      }
+      .switch[aria-checked="true"]::after {
+        transform: translateX(21px);
+      }
+
+      /* uploader */
+      .uploader {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .up-preview {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: var(--r-sm);
+        background: #f6f8fc repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 10px,
+            rgba(0, 0, 0, 0.012) 10px,
+            rgba(0, 0, 0, 0.012) 20px
+          );
+        border: 1.5px dashed var(--line);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        color: var(--ink-3);
+        font-size: 13px;
+        text-align: center;
+        padding: 14px;
+      }
+      .up-preview.is-logo {
+        aspect-ratio: 1 / 1;
+        max-width: 160px;
+      }
+      .up-preview.is-avatar {
+        aspect-ratio: 1 / 1;
+        max-width: 150px;
+        border-radius: 50%;
+      }
+      .up-preview.is-pdf {
+        aspect-ratio: auto;
+        min-height: 110px;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .up-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .up-preview .up-ph-ico {
+        font-size: 30px;
+      }
+      .up-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .btn-up {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        height: 44px;
+        padding: 0 18px;
+        border-radius: var(--r-sm);
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--blue);
+        background: var(--blue-soft);
+        border: 1.5px solid transparent;
+        transition: background 0.15s, transform 0.1s;
+      }
+      .btn-up:active {
+        transform: scale(0.97);
+      }
+      .btn-up svg {
+        width: 17px;
+        height: 17px;
+      }
+      .btn-up[disabled] {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      .up-status {
+        font-size: 12.5px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .up-status.is-busy {
+        color: var(--blue);
+      }
+      .up-status.is-ok {
+        color: var(--ok);
+      }
+      .up-status.is-err {
+        color: var(--danger);
+      }
+      .spin {
+        width: 14px;
+        height: 14px;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .adv {
+        margin-top: 2px;
+        border-top: 1px solid var(--line-2);
+        padding-top: 10px;
+      }
+      .adv summary {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ink-3);
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+        padding: 6px 0;
+      }
+      .adv summary::-webkit-details-marker {
+        display: none;
+      }
+      .adv summary::before {
+        content: "▸ ";
+      }
+      .adv[open] summary::before {
+        content: "▾ ";
+      }
+      .adv .input {
+        margin-top: 9px;
+      }
+
+      /* Q&A repeater (interview) */
+      .qa-block {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .qa-item {
+        border: 1px solid var(--line-2);
+        border-radius: var(--r-sm);
+        padding: 12px;
+        background: #fbfcfe;
+        position: relative;
+      }
+      .qa-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .qa-no {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--blue);
+      }
+      .qa-item .input,
+      .qa-item .textarea {
+        background: #fff;
+      }
+      .qa-item .input + .textarea {
+        margin-top: 8px;
+      }
+      .btn-line {
+        width: 100%;
+        height: 44px;
+        border-radius: var(--r-sm);
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--blue);
+        background: var(--blue-soft);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: background 0.15s, transform 0.1s;
+      }
+      .btn-line:active {
+        transform: scale(0.98);
+      }
+      .btn-line.is-danger {
+        color: var(--danger);
+        background: var(--danger-soft);
+      }
+      .btn-line svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .form-foot {
+        margin-top: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .btn-preview {
+        width: 100%;
+        height: 50px;
+        border-radius: var(--r-md);
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink);
+        background: #fff;
+        border: 1.5px solid var(--line);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: var(--shadow-card);
+        transition: transform 0.1s, border-color 0.15s;
+      }
+      .btn-preview:active {
+        transform: scale(0.985);
+      }
+      .btn-preview svg {
+        width: 18px;
+        height: 18px;
+        color: var(--blue);
+      }
+
+      /* ===================================================================
+         PREVIEW OVERLAY
+         =================================================================== */
+      .ov {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        animation: ovin 0.3s var(--ease) both;
+      }
+      @keyframes ovin {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .ov-bar {
+        flex: 0 0 auto;
+        height: var(--bar-h);
+        padding-top: var(--safe-t);
+        box-sizing: content-box;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-inline: clamp(12px, 4vw, 20px);
+        background: #fff;
+        box-shadow: var(--shadow-bar);
+      }
+      .ov-title {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 15px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .ov-badge {
+        flex: 0 0 auto;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--blue);
+        background: var(--blue-soft);
+        padding: 4px 10px;
+        border-radius: 999px;
+      }
+      .ov-close {
+        flex: 0 0 auto;
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        background: #f2f4fa;
+        color: var(--ink-2);
+      }
+      .ov-close svg {
+        width: 18px;
+        height: 18px;
+      }
+      .ov-body {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 16px clamp(12px, 4vw, 20px) calc(40px + var(--safe-b));
+      }
+      .ov-note {
+        max-width: var(--maxw);
+        margin: 0 auto 14px;
+        font-size: 12.5px;
+        color: var(--ink-2);
+        background: var(--blue-soft);
+        border-radius: var(--r-sm);
+        padding: 10px 13px;
+        line-height: 1.6;
+      }
+      .pv-frame {
+        max-width: var(--maxw);
+        margin-inline: auto;
+      }
+
+      /* ---- preview faithful styles (LP の実セクション再現) ---- */
+      .pv-banner {
+        position: relative;
+        border-radius: var(--r-md);
+        overflow: hidden;
+        box-shadow: var(--shadow-card);
+        border: 1px solid var(--line);
+        background: #fff;
+      }
+      .pv-banner img {
+        width: 100%;
+        display: block;
+      }
+      .pv-banner.is-off {
+        opacity: 0.45;
+        filter: grayscale(0.4);
+      }
+      .pv-off-tag {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        background: rgba(14, 23, 38, 0.7);
+        padding: 4px 10px;
+        border-radius: 999px;
+      }
+
+      .pv-iv {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: var(--shadow-card);
+        position: relative;
+      }
+      .pv-iv-chip {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: #b06d00;
+        background: #fff4e5;
+        padding: 3px 9px;
+        border-radius: 999px;
+      }
+      .pv-iv-head {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding-right: 70px;
+        margin-bottom: 14px;
+      }
+      .pv-iv-av {
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex: 0 0 auto;
+        background: var(--blue-soft);
+      }
+      .pv-iv-av img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .pv-iv-org {
+        font-weight: 700;
+        margin: 0;
+        font-size: 15px;
+      }
+      .pv-iv-scale {
+        margin: 2px 0 0;
+        font-size: 12.5px;
+        color: var(--ink-3);
+      }
+      .pv-iv-qa {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .pv-iv-qa dt {
+        font-weight: 700;
+        font-size: 14px;
+        display: flex;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+      .pv-iv-qa .qmark {
+        flex: 0 0 auto;
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: var(--blue);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        display: grid;
+        place-items: center;
+      }
+      .pv-iv-qa dd {
+        margin: 0 0 0 30px;
+        font-size: 14px;
+        color: var(--ink-2);
+      }
+
+      .pv-faq {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 18px 18px;
+        box-shadow: var(--shadow-card);
+      }
+      .pv-faq-q {
+        font-weight: 700;
+        font-size: 15px;
+        display: flex;
+        gap: 9px;
+        line-height: 1.5;
+      }
+      .pv-faq-q .qn {
+        flex: 0 0 auto;
+        color: var(--blue);
+        font-weight: 900;
+      }
+      .pv-faq-a {
+        margin: 10px 0 0 27px;
+        font-size: 14px;
+        color: var(--ink-2);
+      }
+
+      .pv-doc {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 18px;
+        box-shadow: var(--shadow-card);
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+      }
+      .pv-doc-ico {
+        flex: 0 0 auto;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: var(--blue-soft);
+        color: var(--blue);
+        display: grid;
+        place-items: center;
+        font-size: 22px;
+      }
+      .pv-doc-t {
+        font-weight: 700;
+        margin: 0;
+        font-size: 16px;
+      }
+      .pv-doc-d {
+        margin: 4px 0 0;
+        font-size: 13.5px;
+        color: var(--ink-2);
+      }
+      .pv-doc-meta {
+        margin: 8px 0 0;
+        font-size: 12px;
+        color: var(--ink-3);
+      }
+
+      .pv-logos {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 18px;
+        box-shadow: var(--shadow-card);
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .pv-logo {
+        aspect-ratio: 16 / 9;
+        border: 1px solid var(--line-2);
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        padding: 10px;
+        background: #fff;
+      }
+      .pv-logo img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      /* ===================================================================
+         EMPTY / SKELETON / TOAST / DIALOG
+         =================================================================== */
+      .empty {
+        text-align: center;
+        padding: 44px 20px;
+        color: var(--ink-3);
+      }
+      .empty-ico {
+        font-size: 38px;
+        margin-bottom: 8px;
+      }
+      .skel {
+        background: linear-gradient(100deg, #eef1f7 30%, #f7f9fc 50%, #eef1f7 70%);
+        background-size: 200% 100%;
+        animation: shimmer 1.3s linear infinite;
+        border-radius: var(--r-md);
+      }
+      @keyframes shimmer {
+        to {
+          background-position: -200% 0;
+        }
+      }
+      .skel-card {
+        height: 84px;
+        margin-bottom: 12px;
+      }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(20px + var(--safe-b));
+        transform: translateX(-50%) translateY(20px);
+        z-index: 80;
+        max-width: calc(100vw - 28px);
+        background: var(--ink);
+        color: #fff;
+        font-size: 13.5px;
+        font-weight: 600;
+        padding: 12px 16px;
+        border-radius: 13px;
+        box-shadow: var(--shadow-pop);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        line-height: 1.5;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .toast a {
+        color: #9ec2ff;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .toast.is-err {
+        background: var(--danger);
+      }
+
+      .dlg-back {
+        position: fixed;
+        inset: 0;
+        z-index: 90;
+        background: rgba(14, 23, 38, 0.4);
+        display: grid;
+        place-items: center;
+        padding: 22px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s var(--ease);
+      }
+      .dlg-back.show {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .dlg {
+        width: 100%;
+        max-width: 340px;
+        background: #fff;
+        border-radius: 20px;
+        padding: 22px;
+        box-shadow: var(--shadow-pop);
+        transform: scale(0.94);
+        transition: transform 0.2s var(--ease);
+      }
+      .dlg-back.show .dlg {
+        transform: scale(1);
+      }
+      .dlg-t {
+        font-size: 17px;
+        font-weight: 700;
+        margin: 0 0 6px;
+      }
+      .dlg-m {
+        font-size: 13.5px;
+        color: var(--ink-2);
+        margin: 0 0 18px;
+        line-height: 1.6;
+      }
+      .dlg-row {
+        display: flex;
+        gap: 10px;
+      }
+      .dlg-row button {
+        flex: 1 1 0;
+        height: 46px;
+        border-radius: 13px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .dlg-cancel {
+        background: #f2f4fa;
+        color: var(--ink-2);
+      }
+      .dlg-ok {
+        background: var(--blue);
+        color: #fff;
+      }
+      .dlg-ok.is-danger {
+        background: var(--danger);
+      }
+
+      /* ===================================================================
+         LOGIN
+         =================================================================== */
+      .login {
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .login-card {
+        width: 100%;
+        max-width: 380px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        padding: 30px 24px;
+        box-shadow: var(--shadow-pop);
+        text-align: center;
+      }
+      .login-logo {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        background: var(--blue);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        margin: 0 auto 16px;
+        font-size: 24px;
+        font-weight: 900;
+      }
+      .login-t {
+        font-size: 19px;
+        font-weight: 900;
+        margin: 0 0 4px;
+      }
+      .login-s {
+        font-size: 13px;
+        color: var(--ink-3);
+        margin: 0 0 22px;
+      }
+      .login-card .input {
+        text-align: center;
+        margin-bottom: 12px;
+      }
+      .login-btn {
+        width: 100%;
+        height: 50px;
+        border-radius: var(--r-md);
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        background: var(--blue);
+        box-shadow: 0 6px 18px var(--blue-ring);
+        transition: transform 0.1s, opacity 0.15s;
+      }
+      .login-btn:active {
+        transform: scale(0.98);
+      }
+      .login-btn[disabled] {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      .login-err {
+        margin: 12px 0 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--danger);
+      }
+
+      .hidden {
         display: none !important;
       }
 
       /* ===================================================================
-         2. APP SHELL
-      =================================================================== */
-      .app {
-        display: grid;
-        grid-template-rows: 48px 36px 1fr;
-        height: 100vh;
-        overflow: hidden;
-      }
-
-      /* --- top bar --- */
-      .topbar {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 0 16px;
-        background: var(--navy);
-        z-index: 50;
-      }
-
-      .topbar-brand {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: #fff;
-        font-weight: 800;
-        font-size: 13px;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        white-space: nowrap;
-      }
-
-      .topbar-mark {
-        width: 26px;
-        height: 26px;
-        border-radius: 7px;
-        background: var(--blue);
-        display: grid;
-        place-items: center;
-        color: #fff;
-        font-weight: 900;
-        font-size: 13px;
-      }
-
-      .topbar-sep {
-        width: 1px;
-        height: 22px;
-        background: rgba(255, 255, 255, 0.18);
-      }
-
-      .topbar-badge {
-        font-size: 10px;
-        padding: 2px 7px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.12);
-        color: rgba(255, 255, 255, 0.8);
-        font-weight: 700;
-      }
-
-      .topbar-links {
-        display: flex;
-        gap: 4px;
-        margin-left: auto;
-      }
-
-      .topbar-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 5px 10px;
-        border-radius: var(--r-sm);
-        color: rgba(255, 255, 255, 0.72);
-        font-size: 12px;
-        font-weight: 600;
-        text-decoration: none;
-        transition: background 0.15s, color 0.15s;
-      }
-
-      .topbar-link:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #fff;
-      }
-
-      /* --- global status bar (always visible) --- */
-      .statusbar {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 0 16px;
-        background: var(--surface);
-        border-bottom: 1px solid var(--line);
-        font-size: 12px;
-        font-weight: 700;
-      }
-
-      .statusbar-dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        flex: none;
-        background: var(--muted);
-        transition: background 0.25s;
-      }
-
-      .statusbar-msg {
-        color: var(--muted);
-      }
-
-      .statusbar[data-state="saved"] .statusbar-dot {
-        background: var(--ok);
-      }
-      .statusbar[data-state="saved"] .statusbar-msg {
-        color: var(--ok);
-      }
-      .statusbar[data-state="unsaved"] .statusbar-dot {
-        background: #e08a00;
-      }
-      .statusbar[data-state="unsaved"] .statusbar-msg {
-        color: var(--warn);
-      }
-      .statusbar[data-state="saving"] .statusbar-dot {
-        background: var(--blue);
-        animation: pulse 1s infinite;
-      }
-      .statusbar[data-state="saving"] .statusbar-msg {
-        color: var(--blue);
-      }
-      .statusbar[data-state="error"] .statusbar-dot {
-        background: var(--danger);
-      }
-      .statusbar[data-state="error"] .statusbar-msg {
-        color: var(--danger);
-      }
-
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
+         DESKTOP — 同じ1カラムUIを中央寄せで上品に
+         =================================================================== */
+      @media (min-width: 720px) {
+        .home-card {
+          padding: 18px 20px;
         }
-        50% {
-          opacity: 0.4;
-        }
-      }
-
-      .statusbar-link {
-        margin-left: auto;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        color: var(--blue);
-        font-size: 11.5px;
-        font-weight: 700;
-        text-decoration: none;
-        padding: 3px 10px;
-        border: 1px solid rgba(28, 111, 210, 0.25);
-        border-radius: 999px;
-        background: var(--blue-soft);
-        transition: background 0.15s;
-      }
-
-      .statusbar-link:hover {
-        background: #d8eafb;
-      }
-
-      /* ===================================================================
-         3. LOGIN OVERLAY
-      =================================================================== */
-      .login-screen {
-        position: fixed;
-        inset: 0;
-        z-index: 100;
-        background: var(--bg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
-      }
-
-      .login-card {
-        width: 100%;
-        max-width: 400px;
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-radius: var(--r-lg);
-        box-shadow: var(--sh-pop);
-        padding: 32px;
-      }
-
-      .login-mark {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        background: var(--blue);
-        color: #fff;
-        display: grid;
-        place-items: center;
-        font-weight: 900;
-        font-size: 20px;
-        margin-bottom: 16px;
-      }
-
-      .login-card h1 {
-        font-size: 18px;
-        font-weight: 800;
-        color: var(--navy);
-        margin-bottom: 6px;
-      }
-
-      .login-card p {
-        color: var(--muted);
-        font-size: 12.5px;
-        margin-bottom: 22px;
-        line-height: 1.7;
-      }
-
-      /* ===================================================================
-         4. MAIN LAYOUT  (sidebar + split editor/preview)
-      =================================================================== */
-      .main {
-        display: flex;
-        overflow: hidden;
-        height: 100%;
-      }
-
-      .sidebar {
-        width: 200px;
-        flex: none;
-        background: var(--surface);
-        border-right: 1px solid var(--line);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden auto;
-      }
-
-      .sidebar-section {
-        padding: 12px 10px 4px;
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--muted);
-      }
-
-      .tab-item {
-        position: relative;
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        padding: 9px 10px;
-        margin: 1px 6px;
-        border-radius: var(--r);
-        cursor: pointer;
-        border: none;
-        background: transparent;
-        text-align: left;
-        width: calc(100% - 12px);
-        color: var(--text);
-        font: inherit;
-        font-size: 13px;
-        font-weight: 600;
-        transition: background 0.13s;
-      }
-
-      .tab-item:hover {
-        background: var(--blue-soft);
-        color: var(--blue-deep);
-      }
-
-      .tab-item.is-active {
-        background: var(--blue-soft);
-        color: var(--blue-deep);
-        font-weight: 800;
-      }
-
-      .tab-icon {
-        flex: none;
-        width: 28px;
-        height: 28px;
-        border-radius: var(--r-sm);
-        background: var(--bg);
-        display: grid;
-        place-items: center;
-        color: var(--muted);
-        font-size: 14px;
-      }
-
-      .tab-item.is-active .tab-icon {
-        background: var(--blue);
-        color: #fff;
-      }
-
-      .tab-meta {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .tab-title {
-        display: block;
-        line-height: 1.3;
-      }
-
-      .tab-count {
-        display: block;
-        font-size: 11px;
-        font-weight: 600;
-        color: var(--muted);
-        line-height: 1.3;
-      }
-
-      .tab-item.is-active .tab-count {
-        color: var(--blue);
-      }
-
-      .tab-dot {
-        position: absolute;
-        top: 8px;
-        right: 10px;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #e08a00;
-        border: 1.5px solid var(--surface);
-      }
-
-      .sidebar-foot {
-        margin-top: auto;
-        padding: 10px 12px 14px;
-        border-top: 1px solid var(--line);
-        font-family: "DM Mono", ui-monospace, monospace;
-        font-size: 10px;
-        color: var(--muted);
-      }
-
-      /* --- split --- */
-      .split {
-        flex: 1;
-        display: grid;
-        grid-template-columns: 420px 1fr;
-        overflow: hidden;
-        min-width: 0;
-      }
-
-      /* ===================================================================
-         5. EDITOR PANEL (left)
-      =================================================================== */
-      .editor {
-        display: flex;
-        flex-direction: column;
-        background: var(--bg-alt);
-        border-right: 1px solid var(--line);
-        overflow: hidden;
-      }
-
-      .editor-bar {
-        flex: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 14px;
-        background: var(--surface);
-        border-bottom: 1px solid var(--line);
-      }
-
-      .editor-bar-title {
-        flex: 1;
-        font-weight: 800;
-        font-size: 13.5px;
-        color: var(--navy);
-        min-width: 0;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-      }
-
-      .editor-body {
-        flex: 1;
-        overflow: hidden auto;
-        padding: 14px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      .editor-foot {
-        flex: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        padding: 10px 14px;
-        background: var(--surface);
-        border-top: 1px solid var(--line);
-      }
-
-      .foot-msg {
-        flex: 1;
-        font-size: 11.5px;
-        font-weight: 700;
-        color: var(--muted);
-        min-width: 120px;
-      }
-      .foot-msg[data-state="ok"] {
-        color: var(--ok);
-      }
-      .foot-msg[data-state="error"] {
-        color: var(--danger);
-      }
-      .foot-msg[data-state="unsaved"] {
-        color: var(--warn);
-      }
-
-      /* --- save success banner --- */
-      .save-banner {
-        display: none;
-        gap: 10px;
-        align-items: flex-start;
-        background: var(--ok-bg);
-        border: 1px solid rgba(16, 122, 75, 0.22);
-        border-radius: var(--r);
-        padding: 12px 14px;
-        font-size: 12.5px;
-        font-weight: 700;
-        color: var(--ok);
-        line-height: 1.7;
-      }
-      .save-banner.is-visible {
-        display: flex;
-      }
-      .save-banner a {
-        color: var(--blue);
-        text-decoration: underline;
-      }
-
-      /* ===================================================================
-         6. FORM PRIMITIVES
-      =================================================================== */
-      .block {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-radius: var(--r-lg);
-        box-shadow: var(--sh);
-        overflow: hidden;
-      }
-
-      .block-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        padding: 10px 14px;
-        background: var(--bg-alt);
-        border-bottom: 1px solid var(--line);
-      }
-
-      .block-title {
-        font-size: 12.5px;
-        font-weight: 800;
-        color: var(--navy);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .block-tag {
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--muted);
-        background: var(--bg);
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        padding: 1px 7px;
-      }
-
-      .block-body {
-        padding: 12px 14px;
-        display: grid;
-        gap: 10px;
-      }
-
-      .field {
-        display: grid;
-        gap: 4px;
-      }
-
-      .field-label {
-        font-size: 11.5px;
-        font-weight: 700;
-        color: var(--text);
-        display: flex;
-        align-items: center;
-        gap: 5px;
-      }
-
-      .field-help {
-        font-size: 10.5px;
-        font-weight: 500;
-        color: var(--muted);
-        margin-left: auto;
-      }
-
-      .field-input {
-        width: 100%;
-        border: 1px solid var(--line-mid);
-        border-radius: var(--r);
-        background: var(--surface);
-        color: var(--ink);
-        font: inherit;
-        font-size: 13px;
-        padding: 8px 10px;
-        outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
-      }
-
-      .field-input:focus {
-        border-color: var(--blue);
-        box-shadow: 0 0 0 3px rgba(28, 111, 210, 0.12);
-      }
-
-      textarea.field-input {
-        resize: vertical;
-        min-height: 72px;
-        font-size: 12.5px;
-        line-height: 1.6;
-      }
-
-      .field-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-      }
-
-      .check-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12.5px;
-        font-weight: 600;
-        color: var(--ink);
-        cursor: pointer;
-      }
-
-      .check-row input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
-        flex: none;
-        accent-color: var(--blue);
-        cursor: pointer;
-      }
-
-      /* --- array item cards --- */
-      .item-stack {
-        display: grid;
-        gap: 8px;
-      }
-
-      .item-card {
-        border: 1px solid var(--line);
-        border-radius: var(--r);
-        background: var(--surface);
-        overflow: hidden;
-      }
-
-      .item-card.is-nested {
-        background: var(--bg-alt);
-      }
-
-      .item-head {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 10px;
-        background: var(--bg-alt);
-        border-bottom: 1px solid var(--line);
-      }
-
-      .item-card.is-nested .item-head {
-        background: transparent;
-      }
-
-      .item-no {
-        width: 20px;
-        height: 20px;
-        border-radius: 6px;
-        background: var(--blue);
-        color: #fff;
-        font-size: 10px;
-        font-weight: 800;
-        display: grid;
-        place-items: center;
-        flex: none;
-      }
-
-      .item-no.is-muted {
-        background: var(--muted);
-      }
-
-      .item-title {
-        flex: 1;
-        font-size: 12px;
-        font-weight: 800;
-        color: var(--navy);
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        min-width: 0;
-      }
-
-      .item-body {
-        padding: 10px;
-        display: grid;
-        gap: 8px;
-      }
-
-      .subgroup {
-        margin-top: 4px;
-        border-top: 1px solid var(--line);
-        padding-top: 8px;
-      }
-
-      .subgroup-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 8px;
-        font-size: 11.5px;
-        font-weight: 800;
-        color: var(--navy);
-      }
-
-      .empty-note {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 4px 10px;
-        border-radius: 999px;
-        font-size: 11.5px;
-        font-weight: 700;
-        background: var(--bg);
-        border: 1px solid var(--line);
-        color: var(--muted);
-      }
-
-      /* ===================================================================
-         7. BUTTONS
-      =================================================================== */
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        border: 1px solid transparent;
-        border-radius: 999px;
-        font: inherit;
-        font-size: 11.5px;
-        font-weight: 700;
-        padding: 5px 11px;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: background 0.13s, color 0.13s, border-color 0.13s;
-        min-height: 28px;
-      }
-
-      .btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        box-shadow: none;
-      }
-
-      .btn-primary {
-        background: var(--blue);
-        color: #fff;
-        border-color: var(--blue);
-        box-shadow: 0 4px 12px rgba(28, 111, 210, 0.22);
-      }
-      .btn-primary:hover:not(:disabled) {
-        background: var(--blue-deep);
-      }
-
-      .btn-ghost {
-        background: var(--surface);
-        color: var(--blue-deep);
-        border-color: var(--line);
-      }
-      .btn-ghost:hover:not(:disabled) {
-        background: var(--blue-soft);
-      }
-
-      .btn-danger {
-        background: transparent;
-        color: var(--danger);
-        border-color: transparent;
-      }
-      .btn-danger:hover:not(:disabled) {
-        background: var(--danger-bg);
-        border-color: rgba(195, 58, 43, 0.2);
-      }
-
-      .btn-add {
-        background: var(--blue-soft);
-        color: var(--blue-deep);
-        border-color: rgba(28, 111, 210, 0.2);
-        border-style: dashed;
-      }
-      .btn-add:hover:not(:disabled) {
-        background: var(--blue);
-        color: #fff;
-        border-style: solid;
-      }
-
-      /* ===================================================================
-         8. JSON PANEL
-      =================================================================== */
-      .json-panel {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-radius: var(--r-lg);
-        box-shadow: var(--sh);
-        overflow: hidden;
-      }
-
-      .json-panel summary {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 9px 14px;
-        cursor: pointer;
-        font-size: 11.5px;
-        font-weight: 800;
-        color: var(--muted);
-        list-style: none;
-        transition: color 0.13s;
-      }
-      .json-panel summary:hover {
-        color: var(--blue-deep);
-      }
-      .json-panel summary::-webkit-details-marker {
-        display: none;
-      }
-      .json-panel[open] summary {
-        color: var(--blue-deep);
-        border-bottom: 1px solid var(--line);
-      }
-
-      .json-inner {
-        padding: 10px;
-        display: grid;
-        gap: 8px;
-      }
-      .json-inner p {
-        font-size: 11px;
-        color: var(--muted);
-      }
-
-      .json-textarea {
-        width: 100%;
-        border: 1px solid var(--line-mid);
-        border-radius: var(--r);
-        background: #fafcff;
-        color: var(--ink);
-        font-family: "DM Mono", ui-monospace, monospace;
-        font-size: 11.5px;
-        line-height: 1.65;
-        padding: 9px 10px;
-        min-height: 160px;
-        resize: vertical;
-        outline: none;
-      }
-      .json-textarea:focus {
-        border-color: var(--blue);
-        box-shadow: 0 0 0 3px rgba(28, 111, 210, 0.1);
-      }
-
-      /* ===================================================================
-         9. PREVIEW PANEL (right)
-      =================================================================== */
-      .preview {
-        display: flex;
-        flex-direction: column;
-        background: var(--bg);
-        overflow: hidden;
-      }
-
-      .preview-bar {
-        flex: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 14px;
-        background: var(--surface);
-        border-bottom: 1px solid var(--line);
-      }
-
-      .preview-bar-title {
-        font-size: 11.5px;
-        font-weight: 800;
-        color: var(--muted);
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-      }
-
-      .preview-live {
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--ok);
-        background: var(--ok-bg);
-        border: 1px solid rgba(16, 122, 75, 0.2);
-        border-radius: 999px;
-        padding: 2px 8px;
-      }
-
-      .scale-toggle {
-        margin-left: auto;
-        display: flex;
-        gap: 2px;
-        background: var(--bg);
-        border: 1px solid var(--line);
-        border-radius: var(--r);
-        padding: 2px;
-      }
-
-      .scale-btn {
-        padding: 3px 9px;
-        border-radius: 7px;
-        font: inherit;
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--muted);
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        transition: background 0.13s, color 0.13s;
-      }
-      .scale-btn.is-active {
-        background: var(--surface);
-        color: var(--navy);
-        box-shadow: 0 1px 4px rgba(22, 51, 95, 0.1);
-      }
-
-      .preview-body {
-        flex: 1;
-        overflow: auto;
-        padding: 16px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-      }
-
-      .frame-wrap {
-        width: 100%;
-        max-width: 900px;
-        transition: max-width 0.2s;
-      }
-      .frame-wrap.is-mobile {
-        max-width: 390px;
-      }
-
-      .canvas {
-        background: #fff;
-        border: 1px solid var(--line);
-        border-radius: var(--r-lg);
-        box-shadow: var(--sh-pop);
-        overflow: hidden;
-      }
-
-      .canvas-bar {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        padding: 8px 12px;
-        background: var(--bg-alt);
-        border-bottom: 1px solid var(--line);
-      }
-
-      .canvas-dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        background: #dde3ea;
-      }
-
-      .canvas-url {
-        margin-left: 8px;
-        font-family: "DM Mono", ui-monospace, monospace;
-        font-size: 10.5px;
-        color: var(--muted);
-      }
-
-      .canvas-body {
-        font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
-        font-size: 14px;
-        line-height: 1.7;
-        color: #3c4a5d;
-        padding: 20px;
-        min-height: 200px;
-      }
-
-      .px-note {
-        font-size: 11px;
-        color: var(--muted);
-        margin-bottom: 10px;
-      }
-
-      .px-empty {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        padding: 32px;
-        color: var(--muted);
-        font-size: 13px;
-        text-align: center;
-      }
-      .px-empty-icon {
-        font-size: 28px;
-        opacity: 0.5;
-      }
-
-      /* --- banner preview --- */
-      .px-banner {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 16px 20px;
-        background: linear-gradient(110deg, #1b74d6 0%, #1667cb 48%, #1e4fa8 100%);
-        border-radius: 10px;
-        text-decoration: none;
-      }
-      .px-banner-img {
-        flex: none;
-        width: 100px;
-        height: 56px;
-        object-fit: cover;
-        border-radius: 6px;
-        background: rgba(255, 255, 255, 0.15);
-        display: grid;
-        place-items: center;
-        color: rgba(255, 255, 255, 0.6);
-        font-size: 10px;
-      }
-      .px-banner-text {
-        flex: 1;
-        color: #fff;
-        font-size: 13px;
-        font-weight: 700;
-        line-height: 1.4;
-      }
-      .px-banner-arrow {
-        flex: none;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.18);
-        display: grid;
-        place-items: center;
-        color: #fff;
-        font-size: 12px;
-      }
-      .px-banner-off {
-        text-align: center;
-        color: var(--muted);
-        font-size: 12.5px;
-        padding: 24px;
-        background: var(--bg-alt);
-        border: 1.5px dashed var(--line-mid);
-        border-radius: var(--r);
-      }
-
-      /* --- docs preview --- */
-      .px-docs {
-        display: grid;
-        gap: 12px;
-      }
-      .px-doc {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        border: 1px solid #dde6f0;
-        border-radius: 10px;
-        padding: 14px;
-        background: #fff;
-      }
-      .px-doc-icon {
-        flex: none;
-        width: 36px;
-        height: 42px;
-        border-radius: 5px;
-        background: #eaf3fc;
-        border: 1px solid #c8d8eb;
-        display: grid;
-        place-items: center;
-        font-size: 10px;
-        font-weight: 800;
-        color: #1c6fd2;
-      }
-      .px-doc-title {
-        font-weight: 800;
-        font-size: 14px;
-        color: #16335f;
-        margin-bottom: 2px;
-      }
-      .px-doc-desc {
-        font-size: 12px;
-        color: #6b7a8e;
-        margin-bottom: 6px;
-      }
-      .px-doc-badge {
-        font-size: 11px;
-        font-weight: 700;
-        padding: 2px 9px;
-        border-radius: 999px;
-        border: 1px solid;
-      }
-      .px-doc-badge.is-avail {
-        background: #ecfaf4;
-        color: #107a4b;
-        border-color: rgba(16, 122, 75, 0.25);
-      }
-      .px-doc-badge.is-unavail {
-        background: #f1f5fb;
-        color: #6b7a8e;
-        border-color: #dde6f0;
-      }
-      .px-doc-date {
-        font-size: 11px;
-        color: #6b7a8e;
-        margin-left: 6px;
-      }
-
-      /* --- interviews preview --- */
-      .px-sample-note {
-        background: #fff8e1;
-        border: 1.5px solid #e3c25e;
-        color: #6b5412;
-        border-radius: 10px;
-        padding: 10px 14px;
-        font-size: 12px;
-        font-weight: 700;
-        margin-bottom: 14px;
-      }
-      .px-iv-grid {
-        display: grid;
-        gap: 16px;
-      }
-      .px-iv {
-        border: 1px solid rgba(28, 111, 210, 0.18);
-        border-radius: 14px;
-        padding: 20px;
-        background: #fff;
-        position: relative;
-        box-shadow: 0 4px 14px rgba(22, 51, 95, 0.07);
-      }
-      .px-iv-sample {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        background: #fffbef;
-        border: 1px solid #e3c25e;
-        color: #8a6a14;
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 0.1em;
-        border-radius: 999px;
-        padding: 1px 9px;
-      }
-      .px-iv-head {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding-bottom: 14px;
-        border-bottom: 1px solid rgba(28, 111, 210, 0.12);
-        margin-bottom: 14px;
-      }
-      .px-iv-avatar {
-        flex: none;
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        overflow: hidden;
-        background: #eaf3fc;
-        border: 1px solid rgba(28, 111, 210, 0.2);
-        display: grid;
-        place-items: center;
-        color: var(--muted);
-        font-size: 22px;
-      }
-      .px-iv-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-      }
-      .px-iv-org {
-        font-weight: 800;
-        font-size: 14.5px;
-        color: #16335f;
-      }
-      .px-iv-scale {
-        font-size: 11.5px;
-        color: #6b7a8e;
-        margin-top: 1px;
-      }
-      .px-iv-qa {
-        display: grid;
-        gap: 12px;
-      }
-      .px-iv-item dt {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        font-weight: 800;
-        font-size: 13.5px;
-        color: #1e4fa8;
-        margin-bottom: 4px;
-      }
-      .px-iv-q {
-        flex: none;
-        width: 22px;
-        height: 22px;
-        border-radius: 7px;
-        background: #1c6fd2;
-        color: #fff;
-        font-size: 11px;
-        font-weight: 800;
-        display: grid;
-        place-items: center;
-        margin-top: 2px;
-      }
-      .px-iv-item dd {
-        font-size: 13px;
-        line-height: 1.7;
-        color: #3c4a5d;
-        margin-left: 30px;
-      }
-
-      /* --- logos preview --- */
-      .px-logos {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        justify-content: center;
-      }
-      .px-logo {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2px;
-      }
-      .px-logo-tile {
-        width: 110px;
-        height: 56px;
-        border: 1px solid #dde6f0;
-        border-radius: 8px;
-        display: grid;
-        place-items: center;
-        padding: 8px 12px;
-        background: #fff;
-      }
-      .px-logo-tile img {
-        max-width: 100%;
-        max-height: 32px;
-        object-fit: contain;
-      }
-      .px-logo-fallback {
-        font-size: 10px;
-        color: var(--muted);
-        font-weight: 700;
-        text-align: center;
-      }
-      .px-logo-name {
-        font-size: 10.5px;
-        font-weight: 700;
-        color: #6b7a8e;
-        text-align: center;
-        max-width: 110px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      /* --- faqs preview --- */
-      .px-faqs {
-        max-width: 600px;
-        margin: 0 auto;
-        display: grid;
-        gap: 10px;
-      }
-      .px-faq {
-        border: 1px solid rgba(28, 111, 210, 0.16);
-        border-radius: 12px;
-        background: #fff;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(22, 51, 95, 0.06);
-      }
-      .px-faq-summary {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 14px 18px;
-        font-weight: 700;
-        font-size: 13.5px;
-        color: #16335f;
-        cursor: pointer;
-        list-style: none;
-      }
-      .px-faq-summary::-webkit-details-marker {
-        display: none;
-      }
-      .px-faq-q {
-        flex: none;
-        width: 28px;
-        height: 28px;
-        border-radius: 8px;
-        background: #1c6fd2;
-        color: #fff;
-        font-size: 11px;
-        font-weight: 800;
-        display: grid;
-        place-items: center;
-      }
-      .px-faq-mark {
-        margin-left: auto;
-        color: #1c6fd2;
-        font-size: 16px;
-        font-weight: 700;
-        transition: transform 0.2s;
-      }
-      .px-faq[open] .px-faq-mark {
-        transform: rotate(45deg);
-      }
-      .px-faq-a {
-        padding: 0 18px 14px 52px;
-        font-size: 13px;
-        line-height: 1.75;
-        color: #3c4a5d;
-      }
-
-      /* ===================================================================
-         10. MOBILE
-      =================================================================== */
-      .pane-toggle {
-        display: none;
-        gap: 2px;
-        background: var(--bg);
-        border: 1px solid var(--line);
-        border-radius: var(--r);
-        padding: 2px;
-        margin-left: auto;
-      }
-
-      .pane-btn {
-        padding: 6px 14px;
-        border-radius: 8px;
-        border: none;
-        font: inherit;
-        font-size: 11.5px;
-        font-weight: 700;
-        color: var(--muted);
-        background: transparent;
-        cursor: pointer;
-        min-height: 32px;
-        transition: background 0.13s, color 0.13s;
-      }
-      .pane-btn.is-active {
-        background: var(--surface);
-        color: var(--navy);
-        box-shadow: 0 1px 4px rgba(22, 51, 95, 0.08);
-      }
-
-      @media (max-width: 900px) {
-        body {
-          overflow: auto;
-        }
-        .app {
-          grid-template-rows: 48px 36px auto;
-          height: auto;
-        }
-        .main {
-          flex-direction: column;
-          overflow: visible;
-        }
-        .sidebar {
-          width: 100%;
-          flex-direction: row;
-          overflow: auto hidden;
-          border-right: none;
-          border-bottom: 1px solid var(--line);
-          padding: 6px;
-          gap: 2px;
-        }
-        .sidebar-section,
-        .sidebar-foot {
-          display: none;
-        }
-        .tab-item {
-          flex-direction: column;
-          align-items: center;
-          gap: 3px;
-          padding: 6px 10px;
-          min-width: 76px;
-          min-height: 44px;
-          text-align: center;
-          margin: 0;
-          width: auto;
-        }
-        .tab-count {
-          display: none;
-        }
-        .tab-dot {
-          top: 4px;
-          right: 50%;
-          transform: translateX(22px);
-        }
-        .split {
-          grid-template-columns: 1fr;
-          overflow: visible;
-        }
-        .editor {
-          border-right: none;
-          overflow: visible;
-        }
-        .editor-body {
-          overflow: visible;
-        }
-        .preview {
-          min-height: 420px;
-        }
-        .pane-toggle {
-          display: flex;
-        }
-        /* モバイルでは編集/プレビューのどちらか一方のみ表示。
-           既定はプレビューを隠す（state.pane の初期値 "editor" と一致）。 */
-        .pane-preview {
-          display: none;
-        }
-        .pane-preview.pane-show {
-          display: flex;
-        }
-        .editor.pane-hidden {
-          display: none !important;
-        }
-        .statusbar-link {
-          display: none;
+        .pv-logos {
+          grid-template-columns: repeat(4, 1fr);
         }
       }
     </style>
   </head>
+
   <body>
-    <div class="app">
-      <!-- ===== TOP BAR ===== -->
-      <header class="topbar">
-        <div class="topbar-brand">
-          <div class="topbar-mark" aria-hidden="true">S</div>
-          SellPro CMS
-        </div>
-        <div class="topbar-sep" aria-hidden="true"></div>
-        <span class="topbar-badge">本番コンテンツ管理</span>
-        <nav class="topbar-links" aria-label="関連リンク">
-          <a href="https://sellpro-lp.vercel.app/" class="topbar-link" target="_blank" rel="noopener">
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            サイトを見る
-          </a>
-          <a href="https://sellpro-lp.vercel.app/docs/" class="topbar-link" target="_blank" rel="noopener">資料ページ</a>
-        </nav>
-      </header>
-
-      <!-- ===== GLOBAL STATUS BAR ===== -->
-      <div class="statusbar" id="statusbar" data-state="" role="status" aria-live="polite">
-        <span class="statusbar-dot" aria-hidden="true"></span>
-        <span class="statusbar-msg" id="statusbarMsg">読み込んでいます…</span>
-        <a class="statusbar-link" href="https://sellpro-lp.vercel.app/" target="_blank" rel="noopener">本番サイトを確認 ↗</a>
-      </div>
-
-      <!-- ===== MAIN ===== -->
-      <div class="main">
-        <!-- SIDEBAR -->
-        <aside class="sidebar" aria-label="コンテンツ一覧">
-          <div class="sidebar-section">コンテンツ</div>
-          <div id="tabList" style="display: contents"></div>
-          <div class="sidebar-foot" id="sidebarSha"></div>
-        </aside>
-
-        <!-- SPLIT -->
-        <div class="split">
-          <!-- EDITOR (left) -->
-          <section class="editor pane-editor" id="editorPane" aria-label="編集フォーム">
-            <div class="editor-bar">
-              <span class="editor-bar-title" id="editorTitle">コンテンツを選択</span>
-              <div class="pane-toggle" id="paneToggle" role="tablist" aria-label="表示切替">
-                <button class="pane-btn is-active" data-pane="editor" type="button">編集</button>
-                <button class="pane-btn" data-pane="preview" type="button">プレビュー</button>
-              </div>
-            </div>
-            <div class="editor-body" id="editorBody">
-              <div class="px-empty"><span>左のメニューからコンテンツを選んでください</span></div>
-            </div>
-            <div class="editor-foot">
-              <button class="btn btn-primary" id="saveBtn" type="button" disabled>保存する</button>
-              <button class="btn btn-ghost" id="resetBtn" type="button" disabled>元に戻す</button>
-              <button class="btn btn-ghost" id="reloadBtn" type="button" disabled>再読み込み</button>
-              <span class="foot-msg" id="footMsg" data-state="" role="status" aria-live="polite"></span>
-            </div>
-          </section>
-
-          <!-- PREVIEW (right) -->
-          <section class="preview pane-preview" id="previewPane" aria-label="ライブプレビュー">
-            <div class="preview-bar">
-              <span class="preview-bar-title">ライブプレビュー</span>
-              <span class="preview-live">入力で即反映</span>
-              <div class="scale-toggle" role="tablist" aria-label="表示幅切替">
-                <button class="scale-btn is-active" data-scale="desktop" type="button">デスクトップ</button>
-                <button class="scale-btn" data-scale="mobile" type="button">モバイル</button>
-              </div>
-            </div>
-            <div class="preview-body">
-              <div class="frame-wrap" id="frameWrap">
-                <div class="canvas">
-                  <div class="canvas-bar">
-                    <span class="canvas-dot" aria-hidden="true"></span>
-                    <span class="canvas-dot" aria-hidden="true"></span>
-                    <span class="canvas-dot" aria-hidden="true"></span>
-                    <span class="canvas-url" id="canvasUrl">sellpro-lp.vercel.app</span>
-                  </div>
-                  <div class="canvas-body" id="previewBody" aria-live="polite">
-                    <div class="px-empty">
-                      <div class="px-empty-icon" aria-hidden="true">👁</div>
-                      <span>コンテンツを読み込むとここにプレビューが表示されます</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-      </div>
+    <!-- LOGIN -->
+    <div id="login" class="login">
+      <form id="loginForm" class="login-card" autocomplete="off">
+        <div class="login-logo">S</div>
+        <h1 class="login-t">SellPro 管理</h1>
+        <p class="login-s">パスワードを入力してください</p>
+        <input
+          id="loginPw"
+          class="input"
+          type="password"
+          inputmode="text"
+          placeholder="パスワード"
+          aria-label="管理パスワード"
+          autocomplete="current-password"
+        />
+        <button id="loginBtn" class="login-btn" type="submit">ログイン</button>
+        <p id="loginErr" class="login-err hidden"></p>
+      </form>
     </div>
 
-    <!-- ===== LOGIN OVERLAY ===== -->
-    <div class="login-screen" id="loginScreen">
-      <div class="login-card">
-        <div class="login-mark" aria-hidden="true">S</div>
-        <h1>SellPro CMS</h1>
-        <p>
-          管理パスワードを入力してください。<br />
-          保存後はGitHub経由でビルドが走り、数分で本番に反映されます。
-        </p>
-        <div class="field" style="margin-bottom: 14px">
-          <label class="field-label" for="pwInput">
-            パスワード
-            <span class="field-help">sessionに保存されます</span>
-          </label>
-          <input id="pwInput" class="field-input" type="password" autocomplete="current-password" placeholder="管理パスワード" />
+    <!-- APP -->
+    <div id="app" class="app hidden">
+      <header class="bar">
+        <div class="bar-inner">
+          <div id="barLeft" class="bar-slot" style="justify-content:flex-start"></div>
+          <div id="barTitle" class="bar-title">コンテンツ</div>
+          <div id="barRight" class="bar-slot"></div>
         </div>
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
-          <button id="loginBtn" class="btn btn-primary" type="button" style="padding: 9px 22px; font-size: 13px">ログイン</button>
-          <span id="loginMsg" class="foot-msg" data-state=""></span>
+      </header>
+      <main class="main">
+        <div id="view" class="wrap"></div>
+      </main>
+    </div>
+
+    <!-- OVERLAY / TOAST / DIALOG mount points -->
+    <div id="overlay"></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="dlgBack" class="dlg-back" role="dialog" aria-modal="true">
+      <div class="dlg">
+        <h2 id="dlgT" class="dlg-t"></h2>
+        <p id="dlgM" class="dlg-m"></p>
+        <div class="dlg-row">
+          <button id="dlgCancel" class="dlg-cancel" type="button">キャンセル</button>
+          <button id="dlgOk" class="dlg-ok" type="button">OK</button>
         </div>
       </div>
     </div>
 
     <script>
-      (function () {
-        "use strict";
+      // =====================================================================
+      // CONST
+      // =====================================================================
+      const PW_STORE_KEY = "sellpro_admin_pw";
+      const ASSET_BASE = "https://sellpro-lp.vercel.app/";
+      const SITE_URL = "https://sellpro-lp.vercel.app/";
+      const API_CONTENT = "/api/admin-content";
+      const API_UPLOAD = "/api/admin-upload";
 
-        /* =================================================================
-           CONSTANTS
-        ================================================================= */
-        const SITE_URL = "https://sellpro-lp.vercel.app";
-        const PW_STORE_KEY = "sellproAdminPassword";
-        const DRAFT_STORE_KEY = "sellproAdminDrafts";
-        const DRAFT_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12時間
-        const SAVE_BANNER_MS = 10000;
+      // 種別メタ。key=API キー、folder=アップロード先、kind=array|object
+      const SECTIONS = {
+        banner: {
+          key: "banner", kind: "object", folder: "banner",
+          icon: "📢", name: "バナー",
+          desc: "画面下に出る案内バナー",
+        },
+        docs: {
+          key: "docs", kind: "array", folder: "docs",
+          icon: "📄", name: "ダウンロード資料",
+          desc: "資料ページに並ぶPDF",
+        },
+        interviews: {
+          key: "interviews", kind: "array", folder: "product",
+          icon: "💬", name: "導入インタビュー",
+          desc: "お客様の声・Q&A",
+        },
+        logos: {
+          key: "logos", kind: "array", folder: "logos",
+          icon: "🏢", name: "導入企業ロゴ",
+          desc: "トップに並ぶ企業ロゴ",
+        },
+        faqs: {
+          key: "faqs", kind: "array", folder: null,
+          icon: "❓", name: "よくある質問",
+          desc: "FAQ セクション",
+        },
+      };
+      const SECTION_ORDER = ["banner", "docs", "interviews", "logos", "faqs"];
 
-        // 編集対象レジストリ（キー非依存フローが参照する唯一の定義元）
-        const FILES = [
-          { key: "banner", title: "バナー", icon: "🖼", desc: "資料ページへ誘導するフローティングバナー", url: SITE_URL + "/" },
-          { key: "docs", title: "資料", icon: "📄", desc: "資料ページのPDF一覧", url: SITE_URL + "/docs/" },
-          { key: "interviews", title: "インタビュー", icon: "💬", desc: "導入インタビュー（会社情報 + Q&A）", url: SITE_URL + "/#interview" },
-          { key: "logos", title: "ロゴ", icon: "🏢", desc: "導入企業ロゴウォール", url: SITE_URL + "/#logos" },
-          { key: "faqs", title: "FAQ", icon: "❓", desc: "よくある質問", url: SITE_URL + "/#faq" },
-        ];
+      // =====================================================================
+      // STATE
+      // =====================================================================
+      const state = {
+        password: "",
+        view: "home",        // home | list | edit
+        sectionId: null,     // 現在の種別
+        store: {},           // key -> { data, sha }
+        draft: null,         // 編集中アイテムのコピー
+        draftIndex: null,    // 配列内 index（新規は null）
+        loading: false,
+        saving: false,
+        // M3: 編集フォーム中のアップロード直後ObjectURL保持
+        // field識別子("banner.image" / "avatar" / "logo") -> ObjectURL
+        localUrls: {},
+      };
 
-        // 配列キーの「追加」テンプレート（interviews.sample は既定で true を維持）
-        const TEMPLATES = {
-          "add-doc": () => ({ title: "", description: "", file: "docs/", date: "", available: true }),
-          "add-interview": () => ({ sample: true, org: "", scale: "", role: "導入ご担当者", avatar: "product/", qa: [{ q: "", a: "" }] }),
-          "add-logo": () => ({ file: "", name: "" }),
-          "add-faq": () => ({ q: "", a: "" }),
-          "add-qa": () => ({ q: "", a: "" }),
-        };
-
-        const fileInfo = (key) => FILES.find((f) => f.key === key);
-
-        /* =================================================================
-           STATE
-        ================================================================= */
-        const state = {
-          password: sessionStorage.getItem(PW_STORE_KEY) || "",
-          activeKey: "banner",
-          records: {}, // key -> { path, sha, data }（サーバー最新）
-          drafts: {}, // key -> 編集中データ
-          unsaved: {}, // key -> bool
-          loading: {}, // key -> bool
-          scale: "desktop",
-          pane: "editor",
-        };
-
-        /* =================================================================
-           DOM REFS
-        ================================================================= */
-        const $ = (id) => document.getElementById(id);
-        const els = {
-          loginScreen: $("loginScreen"),
-          pwInput: $("pwInput"),
-          loginBtn: $("loginBtn"),
-          loginMsg: $("loginMsg"),
-          statusbar: $("statusbar"),
-          statusbarMsg: $("statusbarMsg"),
-          tabList: $("tabList"),
-          sidebarSha: $("sidebarSha"),
-          editorTitle: $("editorTitle"),
-          editorBody: $("editorBody"),
-          footMsg: $("footMsg"),
-          saveBtn: $("saveBtn"),
-          resetBtn: $("resetBtn"),
-          reloadBtn: $("reloadBtn"),
-          previewBody: $("previewBody"),
-          canvasUrl: $("canvasUrl"),
-          frameWrap: $("frameWrap"),
-          paneToggle: $("paneToggle"),
-          editorPane: $("editorPane"),
-          previewPane: $("previewPane"),
-        };
-
-        /* =================================================================
-           UTILITIES
-        ================================================================= */
-        const esc = (val) =>
-          String(val ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-        const clone = (v) => JSON.parse(JSON.stringify(v));
-        const pretty = (v) => JSON.stringify(v, null, 2);
-
-        // 入力前後の空白を再帰的に除去（保存直前の正規化に使用）
-        const cleanDeep = (v) => {
-          if (Array.isArray(v)) return v.map(cleanDeep);
-          if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, val]) => [k, cleanDeep(val)]));
-          return typeof v === "string" ? v.trim() : v;
-        };
-
-        // 相対パスを本番の絶対URLに変換（プレビュー画像用）
-        const assetUrl = (path) => {
-          if (!path) return "";
-          if (path.startsWith("http")) return path;
-          return SITE_URL + "/" + path.replace(/^\//, "");
-        };
-
-        // data-path（"0.qa.1.q"）をたどって値を書き込む
-        const setByPath = (obj, path, value) => {
-          const parts = path.split(".");
-          let cur = obj;
-          for (let i = 0; i < parts.length - 1; i++) cur = cur[parts[i]];
-          cur[parts[parts.length - 1]] = value;
-        };
-
-        const draftOf = (key) => state.drafts[key];
-
-        const summaryLabel = (key, data) => {
-          if (data == null) return "—";
-          if (key === "banner") return data.enabled ? "表示中" : "非表示";
-          if (key === "logos") return data.length + "社";
-          return data.length + "件";
-        };
-
-        /* =================================================================
-           STATUS
-        ================================================================= */
-        // 画面上部のグローバルステータス（saved / unsaved / saving / error）
-        function setGlobalStatus(msg, stateName) {
-          els.statusbar.dataset.state = stateName || "";
-          els.statusbarMsg.textContent = msg;
+      // =====================================================================
+      // UTIL
+      // =====================================================================
+      const $ = (id) => document.getElementById(id);
+      const el = (tag, attrs = {}, children = []) => {
+        const node = document.createElement(tag);
+        for (const [k, v] of Object.entries(attrs)) {
+          if (k === "class") node.className = v;
+          else if (k === "html") node.innerHTML = v;
+          else if (k === "text") node.textContent = v;
+          else if (k.startsWith("on") && typeof v === "function")
+            node.addEventListener(k.slice(2).toLowerCase(), v);
+          else if (v !== null && v !== false && v !== undefined)
+            node.setAttribute(k, v === true ? "" : v);
         }
+        (Array.isArray(children) ? children : [children]).forEach((c) => {
+          if (c == null || c === false) return;
+          node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+        });
+        return node;
+      };
+      const esc = (s) =>
+        String(s ?? "")
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
-        // エディタ下部のインラインメッセージ（ok / error / unsaved）
-        function setFootMsg(msg, stateName) {
-          els.footMsg.textContent = msg || "";
-          els.footMsg.dataset.state = stateName || "";
-        }
+      // 画像参照の絶対URL化（規約に合わせる）
+      const assetUrl = (path) => {
+        if (!path) return "";
+        if (/^https?:\/\//.test(path)) return path;
+        return ASSET_BASE + String(path).replace(/^\/+/, "");
+      };
+      const logoUrl = (file) => (file ? ASSET_BASE + "logos/" + String(file).replace(/^\/+/, "") : "");
 
-        // 編集が入った時の共通処理
-        function markUnsaved() {
-          state.unsaved[state.activeKey] = true;
-          setFootMsg("未保存の変更があります。保存ボタンを押してください", "unsaved");
-          setGlobalStatus("未保存の変更があります", "unsaved");
-          renderTabs();
-        }
+      // M3: ローカルObjectURL優先解決。fieldKey に対応するURLがあればそれを返す
+      const resolveImgUrl = (fieldKey, stored, isLogo) => {
+        if (state.localUrls[fieldKey]) return state.localUrls[fieldKey];
+        return isLogo ? logoUrl(stored) : assetUrl(stored);
+      };
 
-        /* =================================================================
-           API
-        ================================================================= */
-        async function api(key, opts = {}) {
-          const res = await fetch("/api/admin-content?key=" + encodeURIComponent(key), {
-            method: opts.method || "GET",
-            headers: { "Content-Type": "application/json", "X-Admin-Password": state.password },
-            body: opts.body ? JSON.stringify(opts.body) : undefined,
-          });
-          const payload = await res.json().catch(() => ({}));
-          if (res.status === 401) {
-            // パスワードが無効になった — セッションをクリアしてログイン画面へ戻す
-            sessionStorage.removeItem(PW_STORE_KEY);
-            state.password = "";
-            els.loginScreen.classList.remove("is-hidden");
-            setFootMsgOn(els.loginMsg, "パスワードが変更された可能性があります。再度入力してください", "error");
-            throw new Error(payload.error || "認証に失敗しました。再ログインしてください");
-          }
-          if (!res.ok) throw new Error(payload.error || "通信に失敗しました（" + res.status + "）");
-          return payload;
-        }
+      // フォームを離れるとき・ログアウト時に全ObjectURLを破棄
+      function revokeAllLocalUrls() {
+        Object.values(state.localUrls).forEach((u) => { try { URL.revokeObjectURL(u); } catch (_) {} });
+        state.localUrls = {};
+      }
 
-        /* =================================================================
-           FIELD BUILDERS  (HTMLパーツの最小単位)
-        ================================================================= */
-        const field = ({ label, path, value, help, placeholder, type = "input" }) => {
-          const id = "f_" + esc(path);
-          const helpHtml = help ? '<span class="field-help">' + esc(help) + "</span>" : "";
-          const ph = esc(placeholder || "");
-          const control =
-            type === "textarea"
-              ? '<textarea id="' + id + '" class="field-input" data-path="' + esc(path) + '" placeholder="' + ph + '">' + esc(value) + "</textarea>"
-              : '<input id="' + id + '" class="field-input" data-path="' + esc(path) + '" value="' + esc(value) + '" placeholder="' + ph + '" />';
-          return '<div class="field"><label class="field-label" for="' + id + '">' + esc(label) + helpHtml + "</label>" + control + "</div>";
-        };
+      const sanitizeFilename = (name) => {
+        const dot = name.lastIndexOf(".");
+        let base = dot > 0 ? name.slice(0, dot) : name;
+        let ext = dot > 0 ? name.slice(dot + 1) : "";
+        base = base.replace(/[^A-Za-z0-9._-]/g, "-").replace(/-+/g, "-").replace(/^[.\-]+|[.\-]+$/g, "");
+        ext = ext.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+        if (!base) base = "file";
+        return ext ? `${base}-${Date.now()}.${ext}` : `${base}-${Date.now()}`;
+      };
+      const fileToBase64 = (file) =>
+        new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result).split(",")[1] || "");
+          r.onerror = reject;
+          r.readAsDataURL(file);
+        });
 
-        const text = (label, path, value, help, placeholder) => field({ label, path, value, help, placeholder });
-        const area = (label, path, value, help, placeholder) => field({ label, path, value, help, placeholder, type: "textarea" });
-        const row = (...fields) => '<div class="field-row">' + fields.join("") + "</div>";
+      const ICON = {
+        chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
+        back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
+        plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+        edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
+        trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+        up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>',
+        eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
+        x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+        arrowUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>',
+        arrowDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+        check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+      };
 
-        const check = (label, path, checked, help) =>
-          '<label class="check-row"><input type="checkbox" data-path="' +
-          esc(path) +
-          '" ' +
-          (checked ? "checked" : "") +
-          " /><span>" +
-          esc(label) +
-          "</span>" +
-          (help ? '<span class="field-help" style="margin-left:auto">' + esc(help) + "</span>" : "") +
-          "</label>";
+      // =====================================================================
+      // TOAST / DIALOG
+      // =====================================================================
+      let toastTimer = null;
+      const toast = (msg, opts = {}) => {
+        const t = $("toast");
+        t.innerHTML = "";
+        if (opts.icon !== false) t.appendChild(el("span", { html: ICON.check }));
+        t.appendChild(el("span", { html: msg })); // msg はこちらで生成・エスケープ済み
+        t.classList.toggle("is-err", !!opts.error);
+        t.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove("show"), opts.duration || 4200);
+      };
 
-        // 配列要素のカードヘッダ（番号 + タイトル + 削除）
-        const itemHead = (no, title, action, idx, extraAttrs = "", muted = false) =>
-          '<div class="item-head"><span class="item-no' +
-          (muted ? " is-muted" : "") +
-          '">' +
-          no +
-          '</span><span class="item-title">' +
-          esc(title) +
-          '</span><button class="btn btn-danger" type="button" data-action="' +
-          action +
-          '" data-index="' +
-          idx +
-          '" ' +
-          extraAttrs +
-          ' style="margin-left:auto">削除</button></div>';
-
-        const block = ({ title, tag, action, addLabel, body }) =>
-          '<div class="block"><div class="block-head"><span class="block-title">' +
-          title +
-          (tag ? ' <span class="block-tag">' + tag + "</span>" : "") +
-          "</span>" +
-          (action ? '<button class="btn btn-add" type="button" data-action="' + action + '">＋ ' + addLabel + "</button>" : "") +
-          '</div><div class="block-body"><div class="item-stack">' +
-          body +
-          "</div></div></div>";
-
-        const emptyNote = (msg) => '<span class="empty-note">' + esc(msg) + "</span>";
-
-        /* =================================================================
-           FORM RENDERERS  (キー別。draft を受けてフォームHTMLを返す)
-        ================================================================= */
-        const FORMS = {
-          banner(d) {
-            return (
-              '<div class="block"><div class="block-head"><span class="block-title">🖼 バナー設定 <span class="block-tag">object</span></span></div>' +
-              '<div class="block-body">' +
-              check("バナーを表示する", "enabled", d.enabled, "外すと非表示") +
-              row(
-                text("画像パス", "image", d.image, "public 相対", "banner/banner-docs.webp"),
-                text("リンク先", "link", d.link, "相対 or 絶対URL", "/docs/")
-              ) +
-              area("代替テキスト", "alt", d.alt, "スクリーンリーダー向け", "バナー画像の説明") +
-              check("別タブで開く", "newTab", d.newTab) +
-              "</div></div>"
-            );
-          },
-
-          docs(data) {
-            const items = data
-              .map(
-                (doc, i) =>
-                  '<div class="item-card">' +
-                  itemHead(i + 1, doc.title || "（タイトル未設定）", "remove-doc", i) +
-                  '<div class="item-body">' +
-                  row(text("タイトル", i + ".title", doc.title, "必須"), text("日付", i + ".date", doc.date, "例: 2026-05", "YYYY-MM")) +
-                  text("PDFファイルパス", i + ".file", doc.file, "public/docs/ 以下", "docs/example.pdf") +
-                  area("説明文", i + ".description", doc.description, "必須") +
-                  check("ダウンロード可能にする", i + ".available", doc.available, "外すと「準備中」") +
-                  "</div></div>"
-              )
-              .join("");
-            return block({
-              title: "📄 資料一覧",
-              tag: "array · " + data.length + "件",
-              action: "add-doc",
-              addLabel: "資料を追加",
-              body: items || emptyNote("資料が登録されていません"),
-            });
-          },
-
-          interviews(data) {
-            const items = data
-              .map((iv, i) => {
-                const qa = (iv.qa || [])
-                  .map(
-                    (q, qi) =>
-                      '<div class="item-card is-nested">' +
-                      itemHead(qi + 1, "Q&A " + (qi + 1), "remove-qa", i, 'data-qi="' + qi + '"', true) +
-                      '<div class="item-body">' +
-                      area("質問 (Q)", i + ".qa." + qi + ".q", q.q, "必須") +
-                      area("回答 (A)", i + ".qa." + qi + ".a", q.a, "必須") +
-                      "</div></div>"
-                  )
-                  .join("");
-                return (
-                  '<div class="item-card">' +
-                  itemHead(i + 1, iv.org || "（会社名未設定）", "remove-interview", i) +
-                  '<div class="item-body">' +
-                  row(text("会社・業界名", i + ".org", iv.org, "必須"), text("規模", i + ".scale", iv.scale, "例: 従業員約750名")) +
-                  row(
-                    text("役職・立場", i + ".role", iv.role, "例: 導入ご担当者"),
-                    text("アバター画像パス", i + ".avatar", iv.avatar, "product/ 以下", "product/avatar.webp")
-                  ) +
-                  check("サンプルとして表示する", i + ".sample", iv.sample, "実インタビューに差し替えたら外す") +
-                  '<div class="subgroup"><div class="subgroup-head"><span>Q&A（' +
-                  (iv.qa || []).length +
-                  '件）</span><button class="btn btn-add" type="button" data-action="add-qa" data-index="' +
-                  i +
-                  '" style="font-size:11px;padding:4px 9px">＋ Q&Aを追加</button></div>' +
-                  '<div class="item-stack">' +
-                  (qa || emptyNote("Q&Aがありません")) +
-                  "</div></div></div></div>"
-                );
-              })
-              .join("");
-            return block({
-              title: "💬 導入インタビュー",
-              tag: "array · " + data.length + "件",
-              action: "add-interview",
-              addLabel: "インタビューを追加",
-              body: items || emptyNote("インタビューが登録されていません"),
-            });
-          },
-
-          logos(data) {
-            const items = data
-              .map(
-                (logo, i) =>
-                  '<div class="item-card">' +
-                  itemHead(i + 1, logo.name || "（会社名未設定）", "remove-logo", i) +
-                  '<div class="item-body">' +
-                  row(text("会社名", i + ".name", logo.name, "必須"), text("ファイル名", i + ".file", logo.file, "logos/ 以下", "company.png")) +
-                  "</div></div>"
-              )
-              .join("");
-            return block({
-              title: "🏢 導入企業ロゴ",
-              tag: "array · " + data.length + "社",
-              action: "add-logo",
-              addLabel: "ロゴを追加",
-              body: items || emptyNote("ロゴが登録されていません"),
-            });
-          },
-
-          faqs(data) {
-            const items = data
-              .map(
-                (faq, i) =>
-                  '<div class="item-card">' +
-                  itemHead("Q" + (i + 1), (faq.q || "").slice(0, 40) || "（質問未設定）", "remove-faq", i) +
-                  '<div class="item-body">' +
-                  area("質問", i + ".q", faq.q, "必須") +
-                  area("回答", i + ".a", faq.a, "必須") +
-                  "</div></div>"
-              )
-              .join("");
-            return block({
-              title: "❓ よくある質問",
-              tag: "array · " + data.length + "件",
-              action: "add-faq",
-              addLabel: "FAQを追加",
-              body: items || emptyNote("FAQが登録されていません"),
-            });
-          },
-        };
-
-        /* =================================================================
-           PREVIEW RENDERERS  (キー別。本番の見た目を再現)
-        ================================================================= */
-        const previewEmpty = (msg) => '<div class="px-empty"><span>' + esc(msg) + "</span></div>";
-
-        // 画像の読み込み失敗時のフォールバック（inline onerror で完結）
-        const IMG_ERR = "this.style.display='none';this.nextElementSibling.style.display='grid'";
-
-        const PREVIEWS = {
-          banner(d) {
-            if (!d.enabled) {
-              return '<div class="px-banner-off">バナーは現在<strong>非表示</strong>です。<br>「バナーを表示する」にチェックを入れると表示されます。</div>';
-            }
-            const src = assetUrl(d.image);
-            const href = d.link || "/docs/";
-            const img = src
-              ? '<img class="px-banner-img" src="' + esc(src) + '" alt="' + esc(d.alt) + '" onerror="' + IMG_ERR + '" /><div class="px-banner-img" style="display:none">画像なし</div>'
-              : '<div class="px-banner-img">画像なし</div>';
-            return (
-              '<p class="px-note">※ フローティングバナーのプレビュー（実際は画面下部に固定表示）</p>' +
-              '<div class="px-banner">' +
-              img +
-              '<span class="px-banner-text">' +
-              esc(d.alt || "（代替テキストなし）") +
-              '</span><span class="px-banner-arrow" aria-hidden="true">→</span></div>' +
-              '<p class="px-note" style="margin-top:8px">リンク先: ' +
-              esc(href) +
-              (d.newTab ? "（別タブ）" : "") +
-              "</p>"
-            );
-          },
-
-          docs(data) {
-            if (!data.length) return previewEmpty("資料が登録されていません");
-            const cards = data
-              .map(
-                (doc) =>
-                  '<div class="px-doc"><div class="px-doc-icon">PDF</div><div style="flex:1;min-width:0">' +
-                  '<div class="px-doc-title">' +
-                  esc(doc.title || "（タイトルなし）") +
-                  '</div><div class="px-doc-desc">' +
-                  esc(doc.description || "") +
-                  '</div><span class="px-doc-badge ' +
-                  (doc.available ? "is-avail" : "is-unavail") +
-                  '">' +
-                  (doc.available ? "ダウンロード可" : "準備中") +
-                  "</span>" +
-                  (doc.date ? '<span class="px-doc-date">' + esc(doc.date) + "</span>" : "") +
-                  "</div></div>"
-              )
-              .join("");
-            return '<div class="px-docs">' + cards + "</div>";
-          },
-
-          interviews(data) {
-            if (!data.length) return previewEmpty("インタビューが登録されていません");
-            const sampleNote = data.some((iv) => iv.sample)
-              ? '<div class="px-sample-note">※ インタビュー内容はサンプルです。実際の導入企業の声に差し替え予定です。</div>'
-              : "";
-            const cards = data
-              .map((iv) => {
-                const src = assetUrl(iv.avatar);
-                const avatar = src
-                  ? '<img src="' + esc(src) + '" alt="" onerror="' + IMG_ERR + '" /><span style="display:none">👤</span>'
-                  : "<span>👤</span>";
-                const qa = (iv.qa || [])
-                  .map(
-                    (q) =>
-                      '<div class="px-iv-item"><dt><span class="px-iv-q">Q</span>' + esc(q.q || "（質問なし）") + "</dt><dd>" + esc(q.a || "（回答なし）") + "</dd></div>"
-                  )
-                  .join("");
-                return (
-                  '<div class="px-iv">' +
-                  (iv.sample ? '<span class="px-iv-sample">SAMPLE</span>' : "") +
-                  '<div class="px-iv-head"><span class="px-iv-avatar">' +
-                  avatar +
-                  '</span><div><div class="px-iv-org">' +
-                  esc(iv.org || "（会社名なし）") +
-                  '</div><div class="px-iv-scale">' +
-                  esc(iv.scale || "") +
-                  (iv.role ? "｜" + esc(iv.role) : "") +
-                  '</div></div></div><dl class="px-iv-qa">' +
-                  (qa || "<dt>Q&Aがありません</dt>") +
-                  "</dl></div>"
-                );
-              })
-              .join("");
-            return sampleNote + '<div class="px-iv-grid">' + cards + "</div>";
-          },
-
-          logos(data) {
-            if (!data.length) return previewEmpty("ロゴが登録されていません");
-            const tiles = data
-              .map((logo) => {
-                const src = logo.file ? assetUrl("logos/" + logo.file) : "";
-                const inner = src
-                  ? '<img src="' + esc(src) + '" alt="' + esc(logo.name) + '" onerror="' + IMG_ERR + '" /><span class="px-logo-fallback" style="display:none">' + esc(logo.name || "?") + "</span>"
-                  : '<span class="px-logo-fallback">' + esc(logo.name || "ファイル名未設定") + "</span>";
-                return '<div class="px-logo"><div class="px-logo-tile">' + inner + '</div><div class="px-logo-name">' + esc(logo.name || "") + "</div></div>";
-              })
-              .join("");
-            return '<p class="px-note" style="text-align:center">※ 実サイトではマーキーで流れます</p><div class="px-logos">' + tiles + "</div>";
-          },
-
-          faqs(data) {
-            if (!data.length) return previewEmpty("FAQが登録されていません");
-            const items = data
-              .map(
-                (faq, i) =>
-                  '<details class="px-faq"' +
-                  (i === 0 ? " open" : "") +
-                  '><summary class="px-faq-summary"><span class="px-faq-q">Q' +
-                  (i + 1) +
-                  "</span>" +
-                  esc(faq.q || "（質問なし）") +
-                  '<span class="px-faq-mark" aria-hidden="true">＋</span></summary><p class="px-faq-a">' +
-                  esc(faq.a || "（回答なし）") +
-                  "</p></details>"
-              )
-              .join("");
-            return '<div class="px-faqs">' + items + "</div>";
-          },
-        };
-
-        /* =================================================================
-           VALIDATION  (空必須を検出。throw でメッセージを返す)
-        ================================================================= */
-        function validate(key, data) {
-          const d = cleanDeep(data);
-          const errors = [];
-          const need = (val, msg) => {
-            if (!String(val ?? "").trim()) errors.push(msg);
+      const confirmDialog = ({ title, message, okLabel = "OK", danger = false }) =>
+        new Promise((resolve) => {
+          const back = $("dlgBack");
+          $("dlgT").textContent = title;
+          $("dlgM").textContent = message;
+          const ok = $("dlgOk");
+          ok.textContent = okLabel;
+          ok.classList.toggle("is-danger", danger);
+          back.classList.add("show");
+          const done = (val) => {
+            back.classList.remove("show");
+            ok.removeEventListener("click", onOk);
+            $("dlgCancel").removeEventListener("click", onCancel);
+            back.removeEventListener("click", onBack);
+            resolve(val);
           };
-          const eachItem = (label, fn) => {
-            if (!Array.isArray(d) || d.length === 0) errors.push(label + "を1件以上登録してください");
-            (Array.isArray(d) ? d : []).forEach(fn);
-          };
-
-          if (key === "banner" && d.enabled) {
-            need(d.image, "バナー: 画像パスを入力してください");
-            need(d.alt, "バナー: 代替テキストを入力してください");
-            need(d.link, "バナー: リンク先を入力してください");
-          }
-          if (key === "docs") {
-            eachItem("資料", (item, i) => {
-              need(item.title, "資料" + (i + 1) + ": タイトルを入力してください");
-              need(item.description, "資料" + (i + 1) + ": 説明文を入力してください");
-              if (item.available) need(item.file, "資料" + (i + 1) + ": PDFパスを入力してください");
-            });
-          }
-          if (key === "interviews") {
-            eachItem("インタビュー", (item, i) => {
-              need(item.org, "インタビュー" + (i + 1) + ": 会社名を入力してください");
-              need(item.scale, "インタビュー" + (i + 1) + ": 規模を入力してください");
-              need(item.role, "インタビュー" + (i + 1) + ": 役職を入力してください");
-              need(item.avatar, "インタビュー" + (i + 1) + ": 画像パスを入力してください");
-              if (!Array.isArray(item.qa) || item.qa.length === 0) errors.push("インタビュー" + (i + 1) + ": Q&Aを1件以上登録してください");
-              (item.qa || []).forEach((qa, qi) => {
-                need(qa.q, "インタビュー" + (i + 1) + " Q&A" + (qi + 1) + ": 質問を入力してください");
-                need(qa.a, "インタビュー" + (i + 1) + " Q&A" + (qi + 1) + ": 回答を入力してください");
-              });
-            });
-          }
-          if (key === "logos") {
-            eachItem("ロゴ", (item, i) => {
-              need(item.name, "ロゴ" + (i + 1) + ": 会社名を入力してください");
-              need(item.file, "ロゴ" + (i + 1) + ": ファイル名を入力してください");
-            });
-          }
-          if (key === "faqs") {
-            eachItem("FAQ", (item, i) => {
-              need(item.q, "FAQ" + (i + 1) + ": 質問を入力してください");
-              need(item.a, "FAQ" + (i + 1) + ": 回答を入力してください");
-            });
-          }
-
-          if (errors.length) throw new Error(errors.slice(0, 3).join(" / "));
-          return d;
-        }
-
-        /* =================================================================
-           RENDER  (state -> DOM。常に state を唯一の真実とする)
-        ================================================================= */
-        function renderTabs() {
-          els.tabList.innerHTML = FILES.map((f) => {
-            const data = draftOf(f.key);
-            const active = f.key === state.activeKey;
-            const countLabel = state.loading[f.key] ? "読込中…" : summaryLabel(f.key, data);
-            const dot = state.unsaved[f.key] ? '<span class="tab-dot" aria-hidden="true"></span>' : "";
-            return (
-              '<button class="tab-item' +
-              (active ? " is-active" : "") +
-              '" type="button" role="tab" aria-selected="' +
-              active +
-              '" data-key="' +
-              f.key +
-              '"><span class="tab-icon" aria-hidden="true">' +
-              f.icon +
-              '</span><span class="tab-meta"><span class="tab-title">' +
-              f.title +
-              '</span><span class="tab-count">' +
-              esc(countLabel) +
-              "</span></span>" +
-              dot +
-              "</button>"
-            );
-          }).join("");
-        }
-
-        function renderEditor() {
-          const info = fileInfo(state.activeKey);
-          const record = state.records[state.activeKey];
-          const draft = draftOf(state.activeKey);
-
-          els.editorTitle.textContent = info.title + " — " + info.desc;
-          els.canvasUrl.textContent = info.url.replace("https://", "");
-          els.sidebarSha.textContent = record ? "sha: " + record.sha.slice(0, 10) : "";
-
-          const ready = draft != null && !state.loading[state.activeKey];
-          els.saveBtn.disabled = !ready;
-          els.resetBtn.disabled = !ready;
-          els.reloadBtn.disabled = !ready;
-
-          if (!ready) {
-            els.editorBody.innerHTML = '<div class="px-empty"><div class="px-empty-icon" aria-hidden="true">⏳</div><span>読み込み中…</span></div>';
-            return;
-          }
-
-          const json =
-            '<details class="json-panel"><summary><svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 4l-3 4 3 4M11 4l3 4-3 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>JSONを直接編集</summary>' +
-            '<div class="json-inner"><p>通常はフォームだけで更新できます。細かい調整が必要な時だけ使ってください。</p>' +
-            '<textarea class="json-textarea" id="jsonTextarea" spellcheck="false">' +
-            esc(pretty(draft)) +
-            '</textarea><button class="btn btn-ghost" type="button" id="applyJsonBtn" style="align-self:start">JSONをフォームへ反映</button></div></details>';
-
-          els.editorBody.innerHTML = FORMS[state.activeKey](draft) + json;
-        }
-
-        function renderPreview() {
-          const draft = draftOf(state.activeKey);
-          els.previewBody.innerHTML = draft == null ? previewEmpty("読み込み中…") : PREVIEWS[state.activeKey](draft);
-        }
-
-        function syncJsonTextarea() {
-          const ta = $("jsonTextarea");
-          if (ta) ta.value = pretty(draftOf(state.activeKey));
-        }
-
-        // 編集中の3面（タブ・フォーム・プレビュー）を一括再描画
-        function renderAll() {
-          renderTabs();
-          renderEditor();
-          renderPreview();
-        }
-
-        /* =================================================================
-           EDITOR INTERACTIONS  (入力 / チェック / 追加削除 / JSON適用)
-        ================================================================= */
-        function onEditorInput(e) {
-          const el = e.target.closest("[data-path]");
-          if (!el || el.id === "jsonTextarea" || el.type === "checkbox") return;
-          setByPath(draftOf(state.activeKey), el.dataset.path, el.value);
-          syncJsonTextarea();
-          renderPreview();
-          markUnsaved();
-        }
-
-        function onEditorChange(e) {
-          const el = e.target.closest("[data-path]");
-          if (!el || el.type !== "checkbox") return;
-          setByPath(draftOf(state.activeKey), el.dataset.path, el.checked);
-          syncJsonTextarea();
-          renderPreview();
-          markUnsaved();
-        }
-
-        function onEditorClick(e) {
-          const applyBtn = e.target.closest("#applyJsonBtn");
-          if (applyBtn) return applyJson();
-
-          const actionBtn = e.target.closest("[data-action]");
-          if (!actionBtn) return;
-
-          const action = actionBtn.dataset.action;
-          const idx = Number(actionBtn.dataset.index);
-          const qi = Number(actionBtn.dataset.qi);
-          const draft = draftOf(state.activeKey);
-
-          // 追加: テンプレートから生成
-          if (TEMPLATES[action]) {
-            if (action === "add-qa") draft[idx].qa.push(TEMPLATES[action]());
-            else draft.push(TEMPLATES[action]());
-            markUnsaved();
-            renderAll();
-            return;
-          }
-
-          // 削除: 確認ダイアログ必須
-          const confirmText = {
-            "remove-doc": () => "資料" + (idx + 1) + "「" + (draft[idx]?.title || "") + "」を削除しますか？",
-            "remove-interview": () => "インタビュー" + (idx + 1) + "「" + (draft[idx]?.org || "") + "」を削除しますか？",
-            "remove-qa": () => "Q&A " + (qi + 1) + "を削除しますか？",
-            "remove-logo": () => "ロゴ" + (idx + 1) + "「" + (draft[idx]?.name || "") + "」を削除しますか？",
-            "remove-faq": () => "FAQ" + (idx + 1) + "を削除しますか？",
-          }[action];
-          if (!confirmText) return;
-          if (!confirm(confirmText() + "\n削除したデータは元に戻せません。")) return;
-
-          if (action === "remove-qa") draft[idx].qa.splice(qi, 1);
-          else draft.splice(idx, 1);
-          markUnsaved();
-          renderAll();
-        }
-
-        function applyJson() {
-          const ta = $("jsonTextarea");
-          if (!ta) return;
-          try {
-            state.drafts[state.activeKey] = JSON.parse(ta.value);
-            markUnsaved();
-            renderAll();
-            setFootMsg("JSONをフォームへ反映しました", "ok");
-          } catch (err) {
-            setFootMsg("JSONの形式を確認してください: " + err.message, "error");
-          }
-        }
-
-        // エディタ本体には一度だけ委譲リスナを張る（再描画ごとの再バインド不要）
-        els.editorBody.addEventListener("input", onEditorInput);
-        els.editorBody.addEventListener("change", onEditorChange);
-        els.editorBody.addEventListener("click", onEditorClick);
-
-        /* =================================================================
-           SAVE / RESET / RELOAD
-        ================================================================= */
-        function showSaveBanner(title) {
-          let banner = $("saveBanner");
-          if (!banner) {
-            banner = document.createElement("div");
-            banner.id = "saveBanner";
-            banner.className = "save-banner";
-            els.editorBody.prepend(banner);
-          }
-          banner.innerHTML =
-            '<span aria-hidden="true">✅</span><span>「' +
-            esc(title) +
-            '」を保存しました。数分で本番サイトに反映されます。<br><a href="' +
-            SITE_URL +
-            '/" target="_blank" rel="noopener">本番サイトを確認 ↗</a></span>';
-          banner.classList.add("is-visible");
-          setTimeout(() => banner.classList.remove("is-visible"), SAVE_BANNER_MS);
-        }
-
-        async function save() {
-          const key = state.activeKey;
-          const info = fileInfo(key);
-          let validated;
-          try {
-            validated = validate(key, draftOf(key));
-          } catch (err) {
-            setFootMsg("⚠ " + err.message, "error");
-            setGlobalStatus("入力内容を確認してください", "error");
-            return;
-          }
-
-          els.saveBtn.disabled = true;
-          setFootMsg("保存しています…", "");
-          setGlobalStatus("保存しています…", "saving");
-
-          try {
-            const payload = await api(key, {
-              method: "POST",
-              body: { data: validated, sha: state.records[key]?.sha, message: "Update SellPro " + key + " content" },
-            });
-            state.records[key] = payload;
-            state.drafts[key] = clone(payload.data);
-            state.unsaved[key] = false;
-            renderAll();
-            setFootMsg("✓ 保存しました。数分で本番に反映されます", "ok");
-            setGlobalStatus("保存しました。数分で本番サイトに反映されます", "saved");
-            showSaveBanner(info.title);
-          } catch (err) {
-            setFootMsg(err.message, "error");
-            setGlobalStatus("保存に失敗しました", "error");
-          } finally {
-            els.saveBtn.disabled = false;
-          }
-        }
-
-        function reset() {
-          if (!confirm("未保存の変更を破棄して、保存前の状態に戻しますか？")) return;
-          state.drafts[state.activeKey] = clone(state.records[state.activeKey].data);
-          state.unsaved[state.activeKey] = false;
-          renderAll();
-          setFootMsg("保存前の状態に戻しました", "ok");
-          setGlobalStatus("保存前の状態に戻しました", "saved");
-        }
-
-        async function reload() {
-          els.reloadBtn.disabled = true;
-          setFootMsg("再読み込み中…", "");
-          try {
-            await loadOne(state.activeKey, true);
-            setFootMsg("再読み込みしました", "ok");
-            setGlobalStatus("最新データを読み込みました", "saved");
-          } catch (err) {
-            setFootMsg(err.message, "error");
-            setGlobalStatus("再読み込みに失敗しました", "error");
-          } finally {
-            els.reloadBtn.disabled = false;
-          }
-        }
-
-        /* =================================================================
-           DATA LOADING
-        ================================================================= */
-        // force=true のときはサーバー値で drafts を上書き（再読み込み用）
-        async function loadOne(key, force) {
-          state.loading[key] = true;
-          if (key === state.activeKey) renderEditor();
-          renderTabs();
-
-          const payload = await api(key);
-          state.records[key] = payload;
-          if (force || state.drafts[key] == null) {
-            state.drafts[key] = clone(payload.data);
-            state.unsaved[key] = false;
-          }
-          state.loading[key] = false;
-
-          renderTabs();
-          if (key === state.activeKey) {
-            renderEditor();
-            renderPreview();
-          }
-          return payload;
-        }
-
-        // 先頭タブを優先読込し、残りは非同期で埋める
-        async function loadAll() {
-          await loadOne(FILES[0].key);
-          state.activeKey = FILES[0].key;
-          const restored = tryRestoreDrafts();
-          renderAll();
-          setGlobalStatus(restored ? "未保存の変更を復元しました" : "読み込みました", restored ? "unsaved" : "saved");
-
-          FILES.slice(1).forEach((f) => {
-            loadOne(f.key).catch(() => {});
-          });
-        }
-
-        /* =================================================================
-           DRAFT PERSISTENCE  (未保存変更を localStorage に退避 / 復元提案)
-        ================================================================= */
-        window.addEventListener("beforeunload", () => {
-          if (!Object.values(state.unsaved).some(Boolean)) return;
-          try {
-            localStorage.setItem(DRAFT_STORE_KEY, JSON.stringify({ ts: Date.now(), drafts: state.drafts, unsaved: state.unsaved }));
-          } catch (_) {
-            /* ストレージ不可時は退避を諦める */
-          }
+          const onOk = () => done(true);
+          const onCancel = () => done(false);
+          const onBack = (e) => { if (e.target === back) done(false); };
+          ok.addEventListener("click", onOk);
+          $("dlgCancel").addEventListener("click", onCancel);
+          back.addEventListener("click", onBack);
         });
 
-        function tryRestoreDrafts() {
-          let saved;
-          try {
-            saved = JSON.parse(localStorage.getItem(DRAFT_STORE_KEY) || "null");
-          } catch (_) {
-            return false;
-          }
-          if (!saved || Date.now() - saved.ts > DRAFT_MAX_AGE_MS) return false;
-          if (!Object.values(saved.unsaved || {}).some(Boolean)) return false;
-
-          if (!confirm("前回の未保存の変更が残っています。復元しますか？\n（キャンセルでサーバーの最新データを使います）")) {
-            localStorage.removeItem(DRAFT_STORE_KEY);
-            return false;
-          }
-          Object.assign(state.drafts, saved.drafts);
-          Object.assign(state.unsaved, saved.unsaved);
-          localStorage.removeItem(DRAFT_STORE_KEY);
-          return true;
-        }
-
-        /* =================================================================
-           LOGIN
-        ================================================================= */
-        async function login() {
-          state.password = els.pwInput.value.trim();
-          if (!state.password) {
-            setFootMsgOn(els.loginMsg, "パスワードを入力してください", "error");
-            return;
-          }
-          els.loginBtn.disabled = true;
-          setFootMsgOn(els.loginMsg, "確認中…", "");
-          try {
-            sessionStorage.setItem(PW_STORE_KEY, state.password);
-            await loadAll();
-            els.loginScreen.classList.add("is-hidden");
-            setFootMsgOn(els.loginMsg, "", "");
-          } catch (err) {
-            sessionStorage.removeItem(PW_STORE_KEY);
-            setFootMsgOn(els.loginMsg, err.message, "error");
-            els.loginBtn.disabled = false;
-          }
-        }
-
-        function setFootMsgOn(el, msg, stateName) {
-          el.textContent = msg || "";
-          el.dataset.state = stateName || "";
-        }
-
-        /* =================================================================
-           CHROME  (preview scale / mobile pane toggle)
-        ================================================================= */
-        document.querySelectorAll("[data-scale]").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            document.querySelectorAll("[data-scale]").forEach((b) => b.classList.toggle("is-active", b === btn));
-            state.scale = btn.dataset.scale;
-            els.frameWrap.classList.toggle("is-mobile", state.scale === "mobile");
-          });
+      // =====================================================================
+      // API（既存 admin-content・契約どおり）
+      // =====================================================================
+      async function apiGet(key) {
+        const res = await fetch(`${API_CONTENT}?key=${encodeURIComponent(key)}`, {
+          headers: { "X-Admin-Password": state.password },
         });
-
-        els.paneToggle.querySelectorAll("[data-pane]").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            els.paneToggle.querySelectorAll("[data-pane]").forEach((b) => b.classList.toggle("is-active", b === btn));
-            state.pane = btn.dataset.pane;
-            els.editorPane.classList.toggle("pane-hidden", state.pane !== "editor"); // 編集を隠す
-            els.previewPane.classList.toggle("pane-show", state.pane === "preview"); // プレビューを出す
-          });
+        if (res.status === 401) { logout(); throw new Error("パスワードが正しくありません。"); }
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || "読み込みに失敗しました。");
+        return body; // { path, sha, data }
+      }
+      async function apiSave(key, data, sha, message) {
+        const res = await fetch(`${API_CONTENT}?key=${encodeURIComponent(key)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Admin-Password": state.password },
+          body: JSON.stringify({ data, sha, message }),
         });
+        if (res.status === 401) { logout(); throw new Error("パスワードが正しくありません。"); }
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || "保存に失敗しました。");
+        return body; // { path, sha, data }
+      }
 
-        /* =================================================================
-           WIRE-UP & INIT
-        ================================================================= */
-        els.tabList.addEventListener("click", (e) => {
-          const tab = e.target.closest(".tab-item");
-          if (!tab) return;
-          state.activeKey = tab.dataset.key;
-          setFootMsg("", "");
-          // 切替先タブの保存状態に合わせてグローバルステータスを再評価する
-          if (state.unsaved[state.activeKey]) {
-            setGlobalStatus("未保存の変更があります", "unsaved");
+      // =====================================================================
+      // UPLOAD（admin-upload・契約どおり）
+      // 返り値: { path, rawPath }
+      // =====================================================================
+      async function uploadFile(folder, file) {
+        const filename = sanitizeFilename(file.name || "upload");
+        const contentBase64 = await fileToBase64(file);
+        const res = await fetch(`${API_UPLOAD}?folder=${encodeURIComponent(folder)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Admin-Password": state.password },
+          body: JSON.stringify({ filename, contentBase64, message: `Upload ${folder}/${filename}` }),
+        });
+        if (res.status === 401) { logout(); throw new Error("パスワードが正しくありません。"); }
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || "アップロードに失敗しました。");
+        return body;
+      }
+
+      // =====================================================================
+      // BAR — タイトル / 戻る / 保存 を状態から描画
+      // =====================================================================
+      function renderBar() {
+        const left = $("barLeft");
+        const right = $("barRight");
+        const title = $("barTitle");
+        left.innerHTML = "";
+        right.innerHTML = "";
+
+        if (state.view === "home") {
+          title.textContent = "コンテンツ";
+          right.appendChild(el("button", {
+            class: "bar-ghost", type: "button", text: "ログアウト",
+            onClick: () => logout(),
+          }));
+        } else if (state.view === "list") {
+          const sec = SECTIONS[state.sectionId];
+          title.textContent = sec.name;
+          left.appendChild(backButton(() => go("home")));
+        } else if (state.view === "edit") {
+          const sec = SECTIONS[state.sectionId];
+          title.textContent = state.draftIndex === null && sec.kind === "array" ? "新規追加" : "編集";
+          left.appendChild(backButton(() => onLeaveEdit()));
+          const save = el("button", {
+            class: "bar-save", type: "button", text: state.saving ? "保存中…" : "保存",
+            onClick: () => saveDraft(),
+          });
+          if (state.saving) save.setAttribute("disabled", "");
+          right.appendChild(save);
+        }
+      }
+      const backButton = (fn) =>
+        el("button", { class: "bar-back", type: "button", onClick: fn }, [
+          el("span", { html: ICON.back }), el("span", { text: "戻る" }),
+        ]);
+
+      // =====================================================================
+      // VIEWS — home / list / edit を #view に描画
+      // =====================================================================
+      const view = () => $("view");
+
+      function renderHome() {
+        const root = view();
+        root.innerHTML = "";
+        const v = el("div", { class: "view" });
+        v.appendChild(el("div", { class: "page-head" }, [
+          el("p", { class: "page-eyebrow", text: "SELLPRO CMS" }),
+          el("h1", { class: "page-title", text: "コンテンツ管理" }),
+          el("p", { class: "page-sub", text: "編集したい項目をタップしてください。" }),
+        ]));
+
+        const list = el("div", { class: "home-list" });
+        SECTION_ORDER.forEach((sid) => {
+          const sec = SECTIONS[sid];
+          const entry = state.store[sec.key];
+          let metaNode;
+          if (state.loading || !entry) {
+            metaNode = el("span", { class: "skel", style: "width:54px;height:18px;border-radius:9px" });
+          } else if (sec.kind === "object") {
+            const on = !!entry.data?.enabled;
+            metaNode = el("span", { class: "pill " + (on ? "pill-on" : "pill-off") }, [
+              el("span", { class: "pill-dot" }), el("span", { text: on ? "表示中" : "非表示" }),
+            ]);
           } else {
-            setGlobalStatus("保存済み", "saved");
+            const n = Array.isArray(entry.data) ? entry.data.length : 0;
+            metaNode = el("span", { class: "home-count", text: `${n}件` });
           }
-          renderAll();
+          list.appendChild(
+            el("button", { class: "home-card", type: "button", onClick: () => openSection(sid) }, [
+              el("span", { class: "home-ico", text: sec.icon }),
+              el("span", { class: "home-tx" }, [
+                el("p", { class: "home-name", text: sec.name }),
+                el("p", { class: "home-desc", text: sec.desc }),
+              ]),
+              el("span", { class: "home-meta" }, [
+                metaNode, el("span", { class: "home-chev", html: ICON.chev }),
+              ]),
+            ])
+          );
         });
+        v.appendChild(list);
+        root.appendChild(v);
+      }
 
-        els.loginBtn.addEventListener("click", login);
-        els.pwInput.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") login();
-        });
-        els.saveBtn.addEventListener("click", save);
-        els.resetBtn.addEventListener("click", reset);
-        els.reloadBtn.addEventListener("click", reload);
+      function renderList() {
+        const sec = SECTIONS[state.sectionId];
+        const entry = state.store[sec.key];
+        const items = Array.isArray(entry?.data) ? entry.data : [];
+        const root = view();
+        root.innerHTML = "";
+        const v = el("div", { class: "view" });
 
-        els.pwInput.value = state.password;
-        renderTabs();
+        v.appendChild(el("div", { class: "list-top" }, [
+          el("span", { class: "list-count", text: `${items.length}件のアイテム` }),
+          el("button", { class: "btn-add", type: "button", onClick: () => openEditor(null) }, [
+            el("span", { html: ICON.plus }), el("span", { text: "追加" }),
+          ]),
+        ]));
 
-        if (state.password) {
-          els.loginScreen.classList.add("is-hidden");
-          loadAll().catch((err) => {
-            sessionStorage.removeItem(PW_STORE_KEY);
-            els.loginScreen.classList.remove("is-hidden");
-            setFootMsgOn(els.loginMsg, err.message, "error");
-          });
+        if (items.length === 0) {
+          v.appendChild(el("div", { class: "empty" }, [
+            el("div", { class: "empty-ico", text: sec.icon }),
+            el("p", { text: "まだ登録がありません。" }),
+            el("p", { style: "font-size:13px", text: "右上の「追加」から登録できます。" }),
+          ]));
+        } else {
+          const ul = el("div", { class: "item-list" });
+          items.forEach((item, i) => ul.appendChild(renderItemCard(state.sectionId, item, i, items.length)));
+          v.appendChild(ul);
         }
+        root.appendChild(v);
+      }
+
+      function renderItemCard(sid, item, i, total) {
+        let thumb, title, sub, tags = [];
+
+        if (sid === "docs") {
+          thumb = el("span", { class: "item-thumb", text: "📄" });
+          title = item.title || "（無題の資料）";
+          sub = item.date || "日付未設定";
+          tags.push(tag(item.available ? "公開中" : "非公開", item.available ? "" : "tag-off"));
+          if (item.file) tags.push(tag("PDFあり"));
+        } else if (sid === "interviews") {
+          const av = assetUrl(item.avatar);
+          thumb = el("span", { class: "item-thumb" }, av
+            ? [imgFallback(av, "")] : [document.createTextNode("💬")]);
+          title = item.org || "（組織名なし）";
+          sub = [item.scale, item.role].filter(Boolean).join("｜") || "詳細未設定";
+          if (item.sample) tags.push(tag("サンプル", "tag-sample"));
+          tags.push(tag(`Q&A ${Array.isArray(item.qa) ? item.qa.length : 0}件`));
+        } else if (sid === "logos") {
+          const lu = logoUrl(item.file);
+          thumb = el("span", { class: "item-thumb is-logo" }, lu
+            ? [imgFallback(lu, "")] : [document.createTextNode("🏢")]);
+          title = item.name || "（企業名なし）";
+          sub = item.file || "画像未設定";
+        } else { // faqs
+          thumb = el("span", { class: "item-thumb", text: "❓" });
+          title = item.q || "（質問が空です）";
+          sub = item.a ? String(item.a).slice(0, 40) : "回答未設定";
+        }
+
+        const card = el("article", { class: "item-card" });
+        card.appendChild(thumb);
+
+        const main = el("button", { class: "item-tap", type: "button", onClick: () => openEditor(i) }, [
+          el("p", { class: "item-title", text: title }),
+          el("p", { class: "item-sub", text: sub }),
+          tags.length ? el("div", { class: "item-tags" }, tags) : null,
+        ]);
+        const mainWrap = el("div", { class: "item-main" }, [main]);
+        card.appendChild(mainWrap);
+
+        // 並び替え矢印
+        const arrows = el("div", { class: "item-arrows" }, [
+          iconBtn(ICON.arrowUp, "上へ", () => moveItem(i, -1), i === 0),
+          iconBtn(ICON.arrowDown, "下へ", () => moveItem(i, 1), i === total - 1),
+        ]);
+        card.appendChild(arrows);
+
+        // 編集 / 削除
+        const acts = el("div", { class: "item-actions" }, [
+          iconBtn(ICON.edit, "編集", () => openEditor(i)),
+          iconBtn(ICON.trash, "削除", () => deleteItem(i), false, true),
+        ]);
+        card.appendChild(acts);
+        return card;
+      }
+
+      const tag = (txt, cls = "") => el("span", { class: "tag " + cls, text: txt });
+      const iconBtn = (svg, label, fn, disabled = false, danger = false) => {
+        const b = el("button", {
+          class: "ic-btn" + (danger ? " is-danger" : ""), type: "button",
+          "aria-label": label, title: label, html: svg, onClick: fn,
+        });
+        if (disabled) b.setAttribute("disabled", "");
+        return b;
+      };
+      const imgFallback = (src, alt) => {
+        const img = el("img", { src, alt });
+        img.addEventListener("error", () => {
+          img.replaceWith(el("span", { style: "font-size:18px", text: "🖼" }));
+        });
+        return img;
+      };
+
+      // =====================================================================
+      // FORMS — 編集フォーム生成（種別ごと）
+      // =====================================================================
+      function renderEdit() {
+        const sec = SECTIONS[state.sectionId];
+        const root = view();
+        root.innerHTML = "";
+        const v = el("div", { class: "view" });
+        const form = el("form", { class: "form", onSubmit: (e) => { e.preventDefault(); saveDraft(); } });
+
+        if (state.sectionId === "banner") buildBannerForm(form);
+        else if (state.sectionId === "docs") buildDocForm(form);
+        else if (state.sectionId === "interviews") buildInterviewForm(form);
+        else if (state.sectionId === "logos") buildLogoForm(form);
+        else if (state.sectionId === "faqs") buildFaqForm(form);
+
+        // フッタ: プレビュー
+        form.appendChild(el("div", { class: "form-foot" }, [
+          el("button", { class: "btn-preview", type: "button", onClick: () => openPreview() }, [
+            el("span", { html: ICON.eye }), el("span", { text: "プレビューを見る" }),
+          ]),
+        ]));
+        v.appendChild(form);
+        root.appendChild(v);
+      }
+
+      // --- 汎用フィールド部品 -------------------------------------------------
+      const fieldText = (label, help, value, onInput, opts = {}) => {
+        const inp = el("input", {
+          class: "input", type: opts.type || "text", value: value ?? "",
+          placeholder: opts.placeholder || "", inputmode: opts.inputmode || null,
+          onInput: (e) => onInput(e.target.value),
+        });
+        return el("div", { class: "field" }, [
+          el("label", { class: "field-label", text: label }),
+          help ? el("p", { class: "field-help", text: help }) : null,
+          inp,
+        ]);
+      };
+      const fieldArea = (label, help, value, onInput, opts = {}) => {
+        const ta = el("textarea", {
+          class: "textarea", placeholder: opts.placeholder || "",
+          rows: opts.rows || 4, onInput: (e) => onInput(e.target.value),
+        });
+        ta.value = value ?? "";
+        return el("div", { class: "field" }, [
+          el("label", { class: "field-label", text: label }),
+          help ? el("p", { class: "field-help", text: help }) : null,
+          ta,
+        ]);
+      };
+      const fieldToggle = (label, help, checked, onToggle) => {
+        const sw = el("button", {
+          class: "switch", type: "button", role: "switch",
+          "aria-checked": checked ? "true" : "false", "aria-label": label,
+        });
+        sw.addEventListener("click", () => {
+          const next = sw.getAttribute("aria-checked") !== "true";
+          sw.setAttribute("aria-checked", next ? "true" : "false");
+          onToggle(next);
+        });
+        return el("div", { class: "field" }, [
+          el("div", { class: "toggle-row" }, [
+            el("div", { class: "toggle-tx" }, [
+              el("label", { class: "field-label", text: label }),
+              help ? el("p", { class: "field-help", style: "margin-bottom:0", text: help }) : null,
+            ]),
+            sw,
+          ]),
+        ]);
+      };
+
+      // --- アップロード部品 ---------------------------------------------------
+      // shape: "banner" | "logo" | "avatar" | "pdf"
+      // storeBasename=true なら格納値を basename のみにする（ロゴ用）
+      // fieldKey: state.localUrls のキー（フォーム内で一意）
+      function fieldUpload({ label, help, folder, shape, accept, value, onChange, storeBasename = false, fieldKey }) {
+        const field = el("div", { class: "field" });
+        field.appendChild(el("label", { class: "field-label", text: label }));
+        if (help) field.appendChild(el("p", { class: "field-help", text: help }));
+
+        const up = el("div", { class: "uploader" });
+        const previewBox = el("div", { class: "up-preview is-" + shape });
+        const status = el("p", { class: "up-status hidden" });
+
+        // M3: ローカルObjectURL優先、なければストア値を解決
+        const currentPreviewSrc = () => {
+          if (state.localUrls[fieldKey]) return state.localUrls[fieldKey];
+          return shape === "logo" ? logoUrl(value.get()) : assetUrl(value.get());
+        };
+
+        const drawPreview = (overrideUrl) => {
+          previewBox.innerHTML = "";
+          const src = overrideUrl || currentPreviewSrc();
+          if (shape === "pdf") {
+            const has = !!value.get();
+            previewBox.appendChild(el("span", { class: "up-ph-ico", text: has ? "📕" : "📄" }));
+            previewBox.appendChild(el("span", { text: has ? (value.get()) : "PDF 未設定" }));
+          } else if (src) {
+            previewBox.appendChild(imgFallback(src, ""));
+          } else {
+            previewBox.appendChild(el("span", { text: "画像が未設定です" }));
+          }
+        };
+        drawPreview();
+
+        const input = el("input", {
+          type: "file", accept, class: "hidden",
+          "aria-label": label + "を選択",
+        });
+        input.addEventListener("change", async () => {
+          const file = input.files && input.files[0];
+          input.value = "";
+          if (!file) return;
+
+          // 即時ローカルプレビュー（M3: ObjectURLは成功後も保持）
+          const objUrl = shape === "pdf" ? null : URL.createObjectURL(file);
+          if (objUrl) {
+            // 以前のObjectURLがあれば先に破棄してから新URLを登録
+            if (state.localUrls[fieldKey]) {
+              try { URL.revokeObjectURL(state.localUrls[fieldKey]); } catch (_) {}
+            }
+            state.localUrls[fieldKey] = objUrl;
+            drawPreview(objUrl);
+          } else {
+            previewBox.innerHTML = "";
+            previewBox.appendChild(el("span", { class: "up-ph-ico", text: "📕" }));
+            previewBox.appendChild(el("span", { text: file.name }));
+          }
+
+          status.className = "up-status is-busy";
+          status.innerHTML = "";
+          status.appendChild(el("span", { class: "spin" }));
+          status.appendChild(el("span", { text: "アップロード中…" }));
+
+          try {
+            const res = await uploadFile(folder, file);
+            // 格納値の決定（規約）
+            let stored = res.path;
+            if (storeBasename) stored = res.path.split("/").pop();
+            value.set(stored);
+            onChange && onChange(stored);
+            // M3: revokeしない。ObjectURLはstate.localUrlsに保持し、フォーム離脱時に破棄。
+            // サムネを再描画（localUrls[fieldKey]が優先される）
+            drawPreview();
+            status.className = "up-status is-ok";
+            status.innerHTML = "";
+            status.appendChild(el("span", { html: ICON.check }));
+            status.appendChild(el("span", { text: "アップロード完了。本番反映は数分後（プレビューは選択した画像を表示中）" }));
+          } catch (err) {
+            // 失敗時はローカルObjectURLを破棄してストア値に戻す
+            if (objUrl && state.localUrls[fieldKey] === objUrl) {
+              try { URL.revokeObjectURL(objUrl); } catch (_) {}
+              delete state.localUrls[fieldKey];
+            }
+            status.className = "up-status is-err";
+            status.textContent = "失敗: " + err.message;
+            drawPreview();
+          }
+        });
+
+        const btnLabel = shape === "pdf" ? "PDFを選ぶ" : "画像をアップロード";
+        up.appendChild(previewBox);
+        up.appendChild(el("div", { class: "up-row" }, [
+          el("button", { class: "btn-up", type: "button", onClick: () => input.click() }, [
+            el("span", { html: ICON.up }), el("span", { text: btnLabel }),
+          ]),
+          input,
+        ]));
+        up.appendChild(status);
+
+        // 上級者向け: 手入力（折りたたみ）
+        const adv = el("details", { class: "adv" });
+        adv.appendChild(el("summary", { text: "ファイル名を直接入力（上級者向け）" }));
+        const manual = el("input", {
+          class: "input", type: "text", value: value.get() || "",
+          placeholder: storeBasename ? "例: company.png" : "例: " + folder + "/file.webp",
+        });
+        manual.addEventListener("input", (e) => { value.set(e.target.value); onChange && onChange(e.target.value); drawPreview(); });
+        adv.appendChild(manual);
+        up.appendChild(adv);
+
+        field.appendChild(up);
+        return field;
+      }
+
+      // --- バナー ------------------------------------------------------------
+      function buildBannerForm(form) {
+        const d = state.draft;
+        form.appendChild(fieldToggle(
+          "バナーを表示する", "オフにすると、サイト下部の案内バナーが消えます。",
+          !!d.enabled, (v) => (d.enabled = v)
+        ));
+        form.appendChild(fieldUpload({
+          label: "バナー画像", help: "横長の画像がおすすめです。スマホのカメラロールからも選べます。",
+          folder: "banner", shape: "banner", accept: "image/*",
+          value: { get: () => d.image, set: (v) => (d.image = v) },
+          fieldKey: "banner.image",
+        }));
+        form.appendChild(fieldText(
+          "画像の説明（代替テキスト）",
+          "画像が表示できないときに代わりに読まれる文章です。",
+          d.alt, (v) => (d.alt = v),
+          { placeholder: "例: ご紹介資料 無料ダウンロード" }
+        ));
+        form.appendChild(fieldText(
+          "リンク先", "バナーを押したときに開くページです。",
+          d.link, (v) => (d.link = v), { placeholder: "例: /docs/" }
+        ));
+        form.appendChild(fieldToggle(
+          "別のタブで開く", "オンにすると、リンクを新しいタブで開きます。",
+          !!d.newTab, (v) => (d.newTab = v)
+        ));
+      }
+
+      // --- 資料 --------------------------------------------------------------
+      function buildDocForm(form) {
+        const d = state.draft;
+        form.appendChild(fieldText("資料のタイトル", "", d.title, (v) => (d.title = v),
+          { placeholder: "例: SellPro ご紹介資料" }));
+        form.appendChild(fieldArea("説明文", "資料ページに表示される短い説明です。",
+          d.description, (v) => (d.description = v), { rows: 3, placeholder: "例: サービス概要・機能・活用事例をまとめた資料" }));
+        form.appendChild(fieldUpload({
+          label: "PDFファイル", help: "ダウンロードしてもらうPDFを選びます。",
+          folder: "docs", shape: "pdf", accept: "application/pdf,.pdf",
+          value: { get: () => d.file, set: (v) => (d.file = v) },
+          fieldKey: "docs.file",
+        }));
+        form.appendChild(fieldText("公開する年月", "資料に添える日付です。",
+          d.date, (v) => (d.date = v), { placeholder: "例: 2026-05" }));
+        form.appendChild(fieldToggle("この資料を公開する",
+          "オフにすると「準備中」表示になり、ダウンロードできなくなります。",
+          !!d.available, (v) => (d.available = v)));
+      }
+
+      // --- インタビュー -------------------------------------------------------
+      function buildInterviewForm(form) {
+        const d = state.draft;
+        if (!Array.isArray(d.qa)) d.qa = [];
+        form.appendChild(fieldToggle("サンプルとして表示", "オンの間は「サンプル」バッジが付きます。実際の声に差し替えたらオフにしてください。",
+          !!d.sample, (v) => (d.sample = v)));
+        form.appendChild(fieldText("組織名・部門", "", d.org, (v) => (d.org = v),
+          { placeholder: "例: メーカー業界 営業企画部門" }));
+        form.appendChild(fieldText("従業員規模", "", d.scale, (v) => (d.scale = v),
+          { placeholder: "例: 従業員規模 約7,000名" }));
+        form.appendChild(fieldText("役職・立場", "", d.role, (v) => (d.role = v),
+          { placeholder: "例: 導入ご担当者" }));
+        form.appendChild(fieldUpload({
+          label: "顔写真・アイコン", help: "丸く切り抜いて表示されます。",
+          folder: "product", shape: "avatar", accept: "image/*",
+          value: { get: () => d.avatar, set: (v) => (d.avatar = v) },
+          fieldKey: "iv.avatar",
+        }));
+
+        // Q&A リピーター
+        const qaWrap = el("div", { class: "field" });
+        qaWrap.appendChild(el("label", { class: "field-label", text: "質問と回答" }));
+        qaWrap.appendChild(el("p", { class: "field-help", text: "Q&Aは何個でも追加できます。" }));
+        const block = el("div", { class: "qa-block" });
+        const renderQa = () => {
+          block.innerHTML = "";
+          d.qa.forEach((qa, qi) => {
+            const q = el("input", { class: "input", type: "text", value: qa.q ?? "", placeholder: "質問（Q）" });
+            q.addEventListener("input", (e) => (qa.q = e.target.value));
+            const a = el("textarea", { class: "textarea", rows: 3, placeholder: "回答（A）" });
+            a.value = qa.a ?? "";
+            a.addEventListener("input", (e) => (qa.a = e.target.value));
+            const item = el("div", { class: "qa-item" }, [
+              el("div", { class: "qa-head" }, [
+                el("span", { class: "qa-no", text: `Q${qi + 1}` }),
+                iconBtn(ICON.trash, "この質問を削除", () => { d.qa.splice(qi, 1); renderQa(); }, false, true),
+              ]),
+              q, a,
+            ]);
+            block.appendChild(item);
+          });
+          block.appendChild(el("button", { class: "btn-line", type: "button",
+            onClick: () => { d.qa.push({ q: "", a: "" }); renderQa(); } }, [
+            el("span", { html: ICON.plus }), el("span", { text: "質問を追加" }),
+          ]));
+        };
+        renderQa();
+        qaWrap.appendChild(block);
+        form.appendChild(qaWrap);
+      }
+
+      // --- ロゴ --------------------------------------------------------------
+      function buildLogoForm(form) {
+        const d = state.draft;
+        form.appendChild(fieldText("企業名", "ロゴ画像の説明にも使われます。",
+          d.name, (v) => (d.name = v), { placeholder: "例: 株式会社サンプル" }));
+        form.appendChild(fieldUpload({
+          label: "ロゴ画像", help: "PNG / SVG / JPG が使えます。",
+          folder: "logos", shape: "logo", accept: "image/*", storeBasename: true,
+          value: { get: () => d.file, set: (v) => (d.file = v) },
+          fieldKey: "logo.file",
+        }));
+      }
+
+      // --- FAQ ---------------------------------------------------------------
+      function buildFaqForm(form) {
+        const d = state.draft;
+        form.appendChild(fieldText("質問", "", d.q, (v) => (d.q = v),
+          { placeholder: "例: 料金について教えてください" }));
+        form.appendChild(fieldArea("回答", "", d.a, (v) => (d.a = v),
+          { rows: 6, placeholder: "回答を入力してください" }));
+      }
+
+      // =====================================================================
+      // PREVIEW OVERLAY — 編集中ドラフトを LP 忠実に表示
+      // =====================================================================
+      function openPreview() {
+        const sec = SECTIONS[state.sectionId];
+        const ov = $("overlay");
+        const body = el("div", { class: "ov-body" });
+        body.appendChild(el("p", { class: "ov-note", html:
+          "ここはプレビューです。実際のサイトへの反映は保存後、数分かかります。" }));
+        const frame = el("div", { class: "pv-frame" });
+        frame.appendChild(buildPreviewNode(state.sectionId, state.draft));
+        body.appendChild(frame);
+
+        const overlay = el("div", { class: "ov" }, [
+          el("div", { class: "ov-bar" }, [
+            el("span", { class: "ov-title", text: sec.name + " プレビュー" }),
+            el("span", { class: "ov-badge", text: "表示イメージ" }),
+            el("button", { class: "ov-close", type: "button", "aria-label": "閉じる",
+              html: ICON.x, onClick: () => { ov.innerHTML = ""; } }),
+          ]),
+          body,
+        ]);
+        ov.innerHTML = "";
+        ov.appendChild(overlay);
+      }
+
+      function buildPreviewNode(sid, d) {
+        if (sid === "banner") {
+          // M3: アップロード直後はlocalUrlsを優先
+          const src = resolveImgUrl("banner.image", d.image, false);
+          const box = el("div", { class: "pv-banner" + (d.enabled ? "" : " is-off") });
+          if (!d.enabled) box.appendChild(el("span", { class: "pv-off-tag", text: "非表示中" }));
+          box.appendChild(src ? imgFallback(src, d.alt || "") : el("div", { style: "padding:40px;text-align:center;color:#8a93a6", text: "画像が未設定です" }));
+          return box;
+        }
+        if (sid === "interviews") {
+          const card = el("div", { class: "pv-iv" });
+          if (d.sample) card.appendChild(el("span", { class: "pv-iv-chip", text: "SAMPLE" }));
+          const av = resolveImgUrl("iv.avatar", d.avatar, false);
+          card.appendChild(el("div", { class: "pv-iv-head" }, [
+            el("div", { class: "pv-iv-av" }, av ? [imgFallback(av, "")] : []),
+            el("div", {}, [
+              el("p", { class: "pv-iv-org", text: d.org || "（組織名なし）" }),
+              el("p", { class: "pv-iv-scale", text: [d.scale, d.role].filter(Boolean).join("｜") }),
+            ]),
+          ]));
+          const dl = el("dl", { class: "pv-iv-qa" });
+          (Array.isArray(d.qa) ? d.qa : []).forEach((qa) => {
+            dl.appendChild(el("div", {}, [
+              el("dt", {}, [el("span", { class: "qmark", text: "Q" }), document.createTextNode(qa.q || "")]),
+              el("dd", { text: qa.a || "" }),
+            ]));
+          });
+          card.appendChild(dl);
+          return card;
+        }
+        if (sid === "faqs") {
+          return el("div", { class: "pv-faq" }, [
+            el("p", { class: "pv-faq-q" }, [el("span", { class: "qn", text: "Q" }), document.createTextNode(d.q || "（質問が空です）")]),
+            el("p", { class: "pv-faq-a", text: d.a || "（回答が空です）" }),
+          ]);
+        }
+        if (sid === "docs") {
+          return el("div", { class: "pv-doc" }, [
+            el("div", { class: "pv-doc-ico", text: "📄" }),
+            el("div", {}, [
+              el("p", { class: "pv-doc-t", text: d.title || "（無題の資料）" }),
+              el("p", { class: "pv-doc-d", text: d.description || "" }),
+              el("p", { class: "pv-doc-meta", text:
+                (d.date ? d.date + "・" : "") + (d.available ? "公開中" : "準備中") + (d.file ? "・PDFあり" : "・PDF未設定") }),
+            ]),
+          ]);
+        }
+        if (sid === "logos") {
+          const lu = resolveImgUrl("logo.file", d.file, true);
+          return el("div", { class: "pv-logos" }, [
+            el("div", { class: "pv-logo" }, lu ? [imgFallback(lu, d.name || "")] : [el("span", { style: "font-size:12px;color:#8a93a6", text: "未設定" })]),
+          ]);
+        }
+        return el("div", {});
+      }
+
+      // =====================================================================
+      // NAVIGATION / ACTIONS
+      // =====================================================================
+      function go(v) {
+        // M3: edit を離れるときに保持していたObjectURLを破棄
+        if (state.view === "edit" && v !== "edit") revokeAllLocalUrls();
+        state.view = v;
+        renderBar();
+        if (v === "home") renderHome();
+        else if (v === "list") renderList();
+        else if (v === "edit") renderEdit();
+        window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+      }
+
+      function openSection(sid) {
+        state.sectionId = sid;
+        const sec = SECTIONS[sid];
+        if (sec.kind === "object") {
+          // バナー: 直接編集
+          const entry = state.store[sec.key];
+          state.draft = deepClone(entry?.data || defaultDraft(sid));
+          state.draftIndex = 0; // 単体は固定
+          go("edit");
+        } else {
+          go("list");
+        }
+      }
+
+      function openEditor(index) {
+        const sec = SECTIONS[state.sectionId];
+        const entry = state.store[sec.key];
+        if (index === null) {
+          state.draft = defaultDraft(state.sectionId);
+          state.draftIndex = null;
+        } else {
+          state.draft = deepClone(entry.data[index]);
+          state.draftIndex = index;
+        }
+        go("edit");
+      }
+
+      function defaultDraft(sid) {
+        switch (sid) {
+          case "banner": return { enabled: true, image: "", alt: "", link: "/docs/", newTab: false };
+          case "docs": return { title: "", description: "", file: "", date: "", available: false };
+          case "interviews": return { sample: true, org: "", scale: "", role: "導入ご担当者", avatar: "", qa: [{ q: "", a: "" }] };
+          case "logos": return { file: "", name: "" };
+          case "faqs": return { q: "", a: "" };
+          default: return {};
+        }
+      }
+      const deepClone = (o) => JSON.parse(JSON.stringify(o));
+
+      async function onLeaveEdit() {
+        // 単純運用: 確認ダイアログで離脱。差分検知は最小限。
+        const ok = await confirmDialog({
+          title: "編集をやめますか？",
+          message: "保存していない変更は反映されません。",
+          okLabel: "編集をやめる", danger: true,
+        });
+        if (!ok) return;
+        const sec = SECTIONS[state.sectionId];
+        go(sec.kind === "object" ? "home" : "list");
+      }
+
+      async function saveDraft() {
+        if (state.saving) return;
+        const sec = SECTIONS[state.sectionId];
+        let entry = state.store[sec.key];
+
+        // M1: sha欠落ガード。loadAll失敗でsha=nullのまま保存すると422になるため再取得
+        if (!entry?.sha) {
+          try {
+            const fresh = await apiGet(sec.key);
+            state.store[sec.key] = { data: fresh.data, sha: fresh.sha };
+            entry = state.store[sec.key];
+          } catch (e2) {
+            toast("データの読み込みに失敗しました。ページを再読み込みしてください。", { error: true, icon: false });
+            return;
+          }
+        }
+
+        let nextData;
+        if (sec.kind === "object") {
+          nextData = state.draft;
+        } else {
+          const arr = Array.isArray(entry?.data) ? deepClone(entry.data) : [];
+          if (state.draftIndex === null) arr.push(state.draft);
+          else arr[state.draftIndex] = state.draft;
+          nextData = arr;
+        }
+
+        state.saving = true;
+        renderBar();
+        try {
+          const res = await apiSave(sec.key, nextData, entry.sha, `Update ${sec.key} via CMS`);
+          state.store[sec.key] = { data: res.data, sha: res.sha };
+          state.saving = false;
+          toast(
+            "保存しました。数分で本番に反映されます。 " +
+            `<a href="${SITE_URL}" target="_blank" rel="noopener">本番を確認</a>`,
+            { icon: true }
+          );
+          go(sec.kind === "object" ? "home" : "list");
+        } catch (err) {
+          state.saving = false;
+          renderBar();
+          // M1: 古いshaへ戻さない。代わりに最新を再取得してストアを更新
+          try {
+            const fresh = await apiGet(sec.key);
+            state.store[sec.key] = { data: fresh.data, sha: fresh.sha };
+          } catch (_) { /* 再取得失敗は無視。次回保存時にガードが再試行する */ }
+          toast(esc(err.message) + " — 最新の状態に更新しました。もう一度保存してください。", { error: true, icon: false, duration: 6000 });
+        }
+      }
+
+      async function deleteItem(index) {
+        const sec = SECTIONS[state.sectionId];
+        const ok = await confirmDialog({
+          title: "削除しますか？", message: "この項目を削除します。元に戻せません。",
+          okLabel: "削除する", danger: true,
+        });
+        if (!ok) return;
+        const arr = deepClone(state.store[sec.key].data);
+        arr.splice(index, 1);
+        await persistArray(sec, arr, "削除しました。");
+      }
+
+      async function moveItem(index, dir) {
+        const sec = SECTIONS[state.sectionId];
+        const arr = deepClone(state.store[sec.key].data);
+        const to = index + dir;
+        if (to < 0 || to >= arr.length) return;
+        [arr[index], arr[to]] = [arr[to], arr[index]];
+        await persistArray(sec, arr, "並び替えました。");
+      }
+
+      async function persistArray(sec, arr, okMsg) {
+        const entry = state.store[sec.key];
+        // 楽観更新でUIを即反映
+        state.store[sec.key] = { data: arr, sha: entry.sha };
+        renderList();
+        try {
+          const res = await apiSave(sec.key, arr, entry.sha, `Update ${sec.key} via CMS`);
+          state.store[sec.key] = { data: res.data, sha: res.sha };
+          renderList();
+          toast(okMsg);
+        } catch (err) {
+          // M1: 古いshaに戻さない。最新を再取得してストアを更新し再描画
+          try {
+            const fresh = await apiGet(sec.key);
+            state.store[sec.key] = { data: fresh.data, sha: fresh.sha };
+          } catch (_) { /* 再取得失敗は無視 */ }
+          renderList();
+          toast(esc(err.message) + " — 最新の状態に更新しました。もう一度お試しください。", { error: true, icon: false, duration: 6000 });
+        }
+      }
+
+      // =====================================================================
+      // BOOT / AUTH
+      // =====================================================================
+      async function loadAll() {
+        state.loading = true;
+        renderHome();
+        const keys = SECTION_ORDER.map((sid) => SECTIONS[sid].key);
+        await Promise.all(keys.map(async (key) => {
+          try {
+            const res = await apiGet(key);
+            state.store[key] = { data: res.data, sha: res.sha };
+          } catch (err) {
+            state.store[key] = { data: key === "banner" ? {} : [], sha: null, error: err.message };
+          }
+          if (state.view === "home") renderHome();
+        }));
+        state.loading = false;
+        if (state.view === "home") renderHome();
+      }
+
+      function enterApp() {
+        $("login").classList.add("hidden");
+        $("app").classList.remove("hidden");
+        go("home");
+        loadAll();
+      }
+      function logout() {
+        revokeAllLocalUrls();
+        sessionStorage.removeItem(PW_STORE_KEY);
+        state.password = "";
+        state.store = {};
+        $("app").classList.add("hidden");
+        $("login").classList.remove("hidden");
+        $("loginPw").value = "";
+      }
+
+      // login form
+      $("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const pw = $("loginPw").value.trim();
+        const err = $("loginErr");
+        const btn = $("loginBtn");
+        if (!pw) { err.textContent = "パスワードを入力してください。"; err.classList.remove("hidden"); return; }
+        err.classList.add("hidden");
+        btn.setAttribute("disabled", "");
+        btn.textContent = "確認中…";
+        state.password = pw;
+        try {
+          await apiGet("banner"); // 認証チェック
+          sessionStorage.setItem(PW_STORE_KEY, pw);
+          enterApp();
+        } catch (e2) {
+          err.textContent = e2.message || "ログインに失敗しました。";
+          err.classList.remove("hidden");
+          state.password = "";
+        } finally {
+          btn.removeAttribute("disabled");
+          btn.textContent = "ログイン";
+        }
+      });
+
+      // resume session
+      (function init() {
+        const saved = sessionStorage.getItem(PW_STORE_KEY);
+        if (saved) { state.password = saved; enterApp(); }
       })();
+
     </script>
   </body>
 </html>
