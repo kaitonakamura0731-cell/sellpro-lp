@@ -1348,6 +1348,359 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           grid-template-columns: repeat(4, 1fr);
         }
       }
+
+      /* ===================================================================
+         DESKTOP 3-PANE — WP-admin風ダークナビ (≥1024px)
+         カラートークン:
+           --nav-bg:    #1e2330  ダークネイビーサイドバー
+           --nav-border:#2a3147  サイドバー内セパレータ
+           --nav-text:  rgba(255,255,255,0.65)  非アクティブ文字
+           --nav-active:#2563eb  アクティブブルー
+           --hdr-bg:    #141922  最暗トップバー
+         =================================================================== */
+      :root {
+        --nav-bg:    #1e2330;
+        --nav-border:#2a3147;
+        --nav-text:  rgba(255,255,255,0.65);
+        --nav-active:#1463ff;
+        --hdr-bg:    #141922;
+      }
+
+      .app-desktop {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        overflow: hidden;
+        background: #f0f2f7;
+      }
+
+      /* --- Top bar -------------------------------------------------------- */
+      .desk-header {
+        flex: 0 0 auto;
+        height: 46px;
+        background: var(--hdr-bg);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px 0 0;
+        gap: 0;
+        z-index: 20;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+      }
+      .desk-brand {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        padding: 0 20px;
+        gap: 10px;
+        border-right: 1px solid rgba(255,255,255,0.07);
+        /* matches sidebar width */
+        width: 220px;
+        flex: 0 0 auto;
+      }
+      .desk-brand-ico {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        background: var(--nav-active);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 900;
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+      }
+      .desk-brand-name {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: rgba(255,255,255,0.88);
+        white-space: nowrap;
+      }
+      .desk-header-right {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: auto;
+      }
+      .desk-site-link {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: rgba(255,255,255,0.6);
+        text-decoration: none;
+        padding: 5px 11px;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.14);
+        transition: color 0.15s, border-color 0.15s, background 0.15s;
+        white-space: nowrap;
+      }
+      .desk-site-link:hover {
+        color: #fff;
+        border-color: rgba(255,255,255,0.38);
+        background: rgba(255,255,255,0.06);
+      }
+      .desk-logout {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: rgba(255,255,255,0.45);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 5px 11px;
+        border-radius: 6px;
+        font-family: inherit;
+        transition: color 0.15s, background 0.15s;
+        white-space: nowrap;
+      }
+      .desk-logout:hover {
+        color: #fff;
+        background: rgba(255,255,255,0.08);
+      }
+      .desk-body {
+        flex: 1 1 auto;
+        display: flex;
+        overflow: hidden;
+      }
+
+      /* --- Dark sidebar (WP-admin style) ---------------------------------- */
+      .desk-sidebar {
+        flex: 0 0 220px;
+        width: 220px;
+        background: var(--nav-bg);
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 10px 0 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.1) transparent;
+      }
+      .desk-sidebar::-webkit-scrollbar { width: 4px; }
+      .desk-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+      /* sidebar section label */
+      .side-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: rgba(255,255,255,0.28);
+        padding: 14px 18px 5px;
+        text-transform: uppercase;
+      }
+
+      .side-tab {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        width: 100%;
+        padding: 0;
+        border: none;
+        background: none;
+        cursor: pointer;
+        text-align: left;
+        color: var(--nav-text);
+        font-family: inherit;
+        position: relative;
+        transition: color 0.13s;
+      }
+      .side-tab-inner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 9px 16px 9px 14px;
+        border-left: 3px solid transparent;
+        transition: background 0.13s, border-color 0.13s;
+      }
+      .side-tab:hover .side-tab-inner {
+        background: rgba(255,255,255,0.06);
+        color: rgba(255,255,255,0.9);
+      }
+      .side-tab:hover {
+        color: rgba(255,255,255,0.9);
+      }
+      .side-tab.is-active {
+        color: #fff;
+      }
+      .side-tab.is-active .side-tab-inner {
+        background: rgba(20,99,255,0.22);
+        border-left-color: var(--nav-active);
+      }
+      .side-tab-ico {
+        flex: 0 0 auto;
+        font-size: 17px;
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        border-radius: 7px;
+        transition: background 0.13s;
+        line-height: 1;
+      }
+      .side-tab-tx {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .side-tab-name {
+        font-size: 13px;
+        font-weight: 600;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.3;
+      }
+      .side-tab-meta {
+        font-size: 11px;
+        display: block;
+        margin-top: 1px;
+        color: rgba(255,255,255,0.38);
+        font-weight: 500;
+      }
+      .side-tab.is-active .side-tab-meta {
+        color: rgba(255,255,255,0.55);
+      }
+
+      /* --- Center pane ---------------------------------------------------- */
+      .desk-center {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        background: #f0f2f7;
+      }
+      /* sub-header inside center (title + save) */
+      .desk-center-head {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 13px 22px;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+        box-shadow: 0 1px 3px rgba(16,23,38,0.06);
+      }
+      .desk-center-title {
+        font-size: 15px;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--ink);
+      }
+      .desk-back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--blue);
+        background: var(--blue-soft);
+        border: none;
+        border-radius: 999px;
+        padding: 5px 13px 5px 8px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background 0.13s, transform 0.1s;
+      }
+      .desk-back-btn:active { transform: scale(0.96); }
+      .desk-back-btn svg { width: 14px; height: 14px; }
+      .desk-save-btn {
+        flex: 0 0 auto;
+        height: 34px;
+        padding: 0 18px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        background: var(--blue);
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        box-shadow: 0 2px 8px var(--blue-ring);
+        transition: transform 0.1s, opacity 0.15s, background 0.15s;
+      }
+      .desk-save-btn:hover { background: var(--blue-dark); }
+      .desk-save-btn:active { transform: scale(0.96); }
+      .desk-save-btn[disabled] { opacity: 0.5; pointer-events: none; box-shadow: none; }
+      /* scrollable body area inside center */
+      .desk-center-body {
+        flex: 1 1 auto;
+        padding: 22px 24px 48px;
+        overflow-y: auto;
+      }
+      /* center list top bar */
+      .desk-list-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .desk-section-desc {
+        font-size: 13px;
+        color: var(--ink-3);
+        margin: 0;
+      }
+
+      /* --- Right preview pane -------------------------------------------- */
+      .desk-preview {
+        flex: 0 0 360px;
+        min-width: 300px;
+        max-width: 420px;
+        border-left: 1px solid var(--line);
+        background: #e8ecf4;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .desk-pv-head {
+        flex: 0 0 auto;
+        padding: 11px 16px 10px;
+        border-bottom: 1px solid var(--line);
+        background: #fff;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .desk-pv-label {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: var(--blue);
+        margin: 0;
+        text-transform: uppercase;
+      }
+      .desk-pv-note {
+        font-size: 11px;
+        color: var(--ink-3);
+        margin: 0;
+      }
+      .desk-pv-body {
+        flex: 1 1 auto;
+        padding: 16px 14px 30px;
+        overflow-y: auto;
+      }
+      .desk-pv-empty {
+        color: var(--ink-3);
+        font-size: 13px;
+        text-align: center;
+        padding: 48px 16px;
+      }
+
+      @media (max-width: 1200px) {
+        .desk-preview { flex: 0 0 320px; min-width: 280px; }
+        .desk-sidebar { flex: 0 0 200px; width: 200px; }
+        .desk-brand  { width: 200px; }
+      }
+      @media (max-width: 1023px) {
+        /* hide desktop layout; mobile layout shown instead */
+        .app-desktop { display: none !important; }
+      }
     </style>
   </head>
 
@@ -1372,7 +1725,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       </form>
     </div>
 
-    <!-- APP -->
+    <!-- APP (mobile mode) -->
     <div id="app" class="app hidden">
       <header class="bar">
         <div class="bar-inner">
@@ -1384,6 +1737,25 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       <main class="main">
         <div id="view" class="wrap"></div>
       </main>
+    </div>
+
+    <!-- APP DESKTOP (3-pane, hidden on mobile) -->
+    <div id="appDesktop" class="app-desktop hidden">
+      <header class="desk-header">
+        <div class="desk-brand">
+          <span class="desk-brand-ico">S</span>
+          <span class="desk-brand-name">SELLPRO CMS</span>
+        </div>
+        <div class="desk-header-right">
+          <a id="deskSiteLink" href="https://sellpro-lp.vercel.app/" target="_blank" rel="noopener noreferrer" class="desk-site-link">本番を確認 ↗</a>
+          <button id="deskLogout" class="desk-logout" type="button">ログアウト</button>
+        </div>
+      </header>
+      <div class="desk-body">
+        <nav id="deskSidebar" class="desk-sidebar" aria-label="セクション"></nav>
+        <main id="deskCenter" class="desk-center"></main>
+        <aside id="deskPreview" class="desk-preview" aria-label="プレビュー"></aside>
+      </div>
     </div>
 
     <!-- OVERLAY / TOAST / DIALOG mount points -->
@@ -1456,6 +1828,16 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         // field識別子("banner.image" / "avatar" / "logo") -> ObjectURL
         localUrls: {},
       };
+
+      const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
+
+      // Preview refresh (debounced via rAF for live preview on desktop)
+      let _pvRafId = null;
+      function schedulePreviewRefresh() {
+        if (!isDesktop() || !state.draft) return;
+        if (_pvRafId) cancelAnimationFrame(_pvRafId);
+        _pvRafId = requestAnimationFrame(() => { _pvRafId = null; renderDesktopPreview(); });
+      }
 
       // =====================================================================
       // UTIL
@@ -1543,6 +1925,13 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         t.innerHTML = "";
         if (opts.icon !== false) t.appendChild(el("span", { html: ICON.check }));
         t.appendChild(el("span", { html: msg })); // msg はこちらで生成・エスケープ済み
+        const closeBtn = el('button', {
+          type: 'button',
+          style: 'background:none;border:none;color:rgba(255,255,255,0.7);font-size:16px;cursor:pointer;padding:0 0 0 8px;line-height:1;flex-shrink:0',
+          text: '✕',
+          onClick: () => { t.classList.remove('show'); clearTimeout(toastTimer); }
+        });
+        t.appendChild(closeBtn);
         t.classList.toggle("is-err", !!opts.error);
         t.classList.add("show");
         clearTimeout(toastTimer);
@@ -1833,7 +2222,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         const inp = el("input", {
           class: "input", type: opts.type || "text", value: value ?? "",
           placeholder: opts.placeholder || "", inputmode: opts.inputmode || null,
-          onInput: (e) => onInput(e.target.value),
+          onInput: (e) => { onInput(e.target.value); schedulePreviewRefresh(); },
         });
         return el("div", { class: "field" }, [
           el("label", { class: "field-label", text: label }),
@@ -1844,7 +2233,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       const fieldArea = (label, help, value, onInput, opts = {}) => {
         const ta = el("textarea", {
           class: "textarea", placeholder: opts.placeholder || "",
-          rows: opts.rows || 4, onInput: (e) => onInput(e.target.value),
+          rows: opts.rows || 4, onInput: (e) => { onInput(e.target.value); schedulePreviewRefresh(); },
         });
         ta.value = value ?? "";
         return el("div", { class: "field" }, [
@@ -1862,6 +2251,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           const next = sw.getAttribute("aria-checked") !== "true";
           sw.setAttribute("aria-checked", next ? "true" : "false");
           onToggle(next);
+          schedulePreviewRefresh();
         });
         return el("div", { class: "field" }, [
           el("div", { class: "toggle-row" }, [
@@ -1944,6 +2334,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
             if (storeBasename) stored = res.path.split("/").pop();
             value.set(stored);
             onChange && onChange(stored);
+            schedulePreviewRefresh();
             // M3: revokeしない。ObjectURLはstate.localUrlsに保持し、フォーム離脱時に破棄。
             // サムネを再描画（localUrls[fieldKey]が優先される）
             drawPreview();
@@ -1980,7 +2371,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           class: "input", type: "text", value: value.get() || "",
           placeholder: storeBasename ? "例: company.png" : "例: " + folder + "/file.webp",
         });
-        manual.addEventListener("input", (e) => { value.set(e.target.value); onChange && onChange(e.target.value); drawPreview(); });
+        manual.addEventListener("input", (e) => { value.set(e.target.value); onChange && onChange(e.target.value); drawPreview(); schedulePreviewRefresh(); });
         adv.appendChild(manual);
         up.appendChild(adv);
 
@@ -2065,21 +2456,21 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           block.innerHTML = "";
           d.qa.forEach((qa, qi) => {
             const q = el("input", { class: "input", type: "text", value: qa.q ?? "", placeholder: "質問（Q）" });
-            q.addEventListener("input", (e) => (qa.q = e.target.value));
+            q.addEventListener("input", (e) => { qa.q = e.target.value; schedulePreviewRefresh(); });
             const a = el("textarea", { class: "textarea", rows: 3, placeholder: "回答（A）" });
             a.value = qa.a ?? "";
-            a.addEventListener("input", (e) => (qa.a = e.target.value));
+            a.addEventListener("input", (e) => { qa.a = e.target.value; schedulePreviewRefresh(); });
             const item = el("div", { class: "qa-item" }, [
               el("div", { class: "qa-head" }, [
                 el("span", { class: "qa-no", text: `Q${qi + 1}` }),
-                iconBtn(ICON.trash, "この質問を削除", () => { d.qa.splice(qi, 1); renderQa(); }, false, true),
+                iconBtn(ICON.trash, "この質問を削除", () => { d.qa.splice(qi, 1); renderQa(); schedulePreviewRefresh(); }, false, true),
               ]),
               q, a,
             ]);
             block.appendChild(item);
           });
           block.appendChild(el("button", { class: "btn-line", type: "button",
-            onClick: () => { d.qa.push({ q: "", a: "" }); renderQa(); } }, [
+            onClick: () => { d.qa.push({ q: "", a: "" }); renderQa(); schedulePreviewRefresh(); } }, [
             el("span", { html: ICON.plus }), el("span", { text: "質問を追加" }),
           ]));
         };
@@ -2193,6 +2584,209 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       }
 
       // =====================================================================
+      // DESKTOP 3-PANE RENDERING
+      // =====================================================================
+      function enterDesktop() {
+        document.getElementById('appDesktop').classList.remove('hidden');
+        document.getElementById('app').classList.add('hidden');
+        renderSidebar();
+        // pick first section or restore
+        if (!state.sectionId) state.sectionId = SECTION_ORDER[0];
+        renderDesktopSection();
+        document.getElementById('deskLogout').onclick = logout;
+      }
+
+      function renderSidebar() {
+        const nav = document.getElementById('deskSidebar');
+        if (!nav) return;
+        nav.innerHTML = '';
+        SECTION_ORDER.forEach(sid => {
+          const sec = SECTIONS[sid];
+          const entry = state.store[sec.key];
+          let metaTxt = '';
+          if (state.loading || !entry) {
+            metaTxt = '…';
+          } else if (sec.kind === 'object') {
+            metaTxt = entry.data?.enabled ? '表示中' : '非表示';
+          } else {
+            metaTxt = `${Array.isArray(entry.data) ? entry.data.length : 0}件`;
+          }
+          const tab = el('button', {
+            class: 'side-tab' + (state.sectionId === sid ? ' is-active' : ''),
+            type: 'button',
+            'aria-pressed': state.sectionId === sid ? 'true' : 'false',
+            onClick: () => {
+              revokeAllLocalUrls();
+              state.sectionId = sid;
+              state.draft = null;
+              state.draftIndex = null;
+              renderSidebar();
+              renderDesktopSection();
+            }
+          }, [
+            el('div', { class: 'side-tab-inner' }, [
+              el('span', { class: 'side-tab-ico', text: sec.icon }),
+              el('span', { class: 'side-tab-tx' }, [
+                el('span', { class: 'side-tab-name', text: sec.name }),
+                el('span', { class: 'side-tab-meta', text: metaTxt }),
+              ]),
+            ]),
+          ]);
+          nav.appendChild(tab);
+        });
+      }
+
+      function renderDesktopSection() {
+        if (!isDesktop()) return;
+        const sec = SECTIONS[state.sectionId];
+        const center = document.getElementById('deskCenter');
+        if (!center) return;
+
+        if (state.draft !== null) {
+          // Edit form mode
+          renderDesktopEdit();
+        } else if (sec.kind === 'object') {
+          // Banner: go straight to edit
+          const entry = state.store[sec.key];
+          state.draft = deepClone(entry?.data || defaultDraft(state.sectionId));
+          state.draftIndex = 0;
+          renderDesktopEdit();
+        } else {
+          // Array: list mode
+          renderDesktopList();
+        }
+        renderDesktopPreview();
+      }
+
+      function renderDesktopList() {
+        const sec = SECTIONS[state.sectionId];
+        const entry = state.store[sec.key];
+        const items = Array.isArray(entry?.data) ? entry.data : [];
+        const center = document.getElementById('deskCenter');
+
+        const head = el('div', { class: 'desk-center-head' }, [
+          el('h2', { class: 'desk-center-title' }, [
+            el('span', { text: sec.icon + '  ' }),
+            el('span', { text: sec.name }),
+          ]),
+          el('button', { class: 'btn-add', type: 'button', onClick: () => {
+            state.draft = defaultDraft(state.sectionId);
+            state.draftIndex = null;
+            renderDesktopEdit();
+            renderDesktopPreview();
+          }}, [
+            el('span', { html: ICON.plus }), el('span', { text: '追加' }),
+          ]),
+        ]);
+
+        const body = el('div', { class: 'desk-center-body' });
+        if (items.length === 0) {
+          body.appendChild(el('div', { class: 'empty' }, [
+            el('div', { class: 'empty-ico', text: sec.icon }),
+            el('p', { text: 'まだ登録がありません。' }),
+          ]));
+        } else {
+          const ul = el('div', { class: 'item-list' });
+          items.forEach((item, i) => {
+            const card = renderItemCard(state.sectionId, item, i, items.length);
+            // Override tap handler: desktop opens in center pane
+            const tapBtn = card.querySelector('.item-tap');
+            if (tapBtn) {
+              tapBtn.onclick = () => {
+                state.draft = deepClone(entry.data[i]);
+                state.draftIndex = i;
+                renderDesktopEdit();
+                renderDesktopPreview();
+              };
+            }
+            // Override edit icon button too
+            const editBtns = card.querySelectorAll('.ic-btn:not(.is-danger)');
+            // last non-danger ic-btn is the edit button (after the two arrows)
+            const editBtn = editBtns[editBtns.length - 1];
+            if (editBtn) {
+              editBtn.onclick = () => {
+                state.draft = deepClone(entry.data[i]);
+                state.draftIndex = i;
+                renderDesktopEdit();
+                renderDesktopPreview();
+              };
+            }
+            ul.appendChild(card);
+          });
+          body.appendChild(ul);
+        }
+
+        center.innerHTML = '';
+        center.appendChild(head);
+        center.appendChild(body);
+      }
+
+      function renderDesktopEdit() {
+        const sec = SECTIONS[state.sectionId];
+        const center = document.getElementById('deskCenter');
+
+        const isNew = state.draftIndex === null && sec.kind === 'array';
+        const titleTxt = isNew ? '新規追加' : '編集';
+
+        const titleContent = [];
+        if (sec.kind === 'array') {
+          titleContent.push(el('button', { class: 'desk-back-btn', type: 'button', onClick: () => {
+            revokeAllLocalUrls();
+            state.draft = null;
+            state.draftIndex = null;
+            renderDesktopSection();
+          }}, [el('span', { html: ICON.back }), el('span', { text: '一覧へ' })]));
+        }
+        titleContent.push(el('span', { text: titleTxt }));
+
+        const saveBtn = el('button', {
+          class: 'desk-save-btn', type: 'button',
+          text: state.saving ? '保存中…' : '保存',
+          onClick: () => saveDraft(),
+        });
+        if (state.saving) saveBtn.setAttribute('disabled', '');
+
+        const head = el('div', { class: 'desk-center-head' }, [
+          el('h2', { class: 'desk-center-title' }, titleContent),
+          saveBtn,
+        ]);
+
+        const body = el('div', { class: 'desk-center-body' });
+        const form = el('form', { class: 'form', onSubmit: (e) => { e.preventDefault(); saveDraft(); } });
+        if (state.sectionId === 'banner') buildBannerForm(form);
+        else if (state.sectionId === 'docs') buildDocForm(form);
+        else if (state.sectionId === 'interviews') buildInterviewForm(form);
+        else if (state.sectionId === 'logos') buildLogoForm(form);
+        else if (state.sectionId === 'faqs') buildFaqForm(form);
+        body.appendChild(form);
+
+        center.innerHTML = '';
+        center.appendChild(head);
+        center.appendChild(body);
+      }
+
+      function renderDesktopPreview() {
+        const pv = document.getElementById('deskPreview');
+        if (!pv) return;
+
+        const head = el('div', { class: 'desk-pv-head' }, [
+          el('p', { class: 'desk-pv-label', text: 'PREVIEW' }),
+          el('p', { class: 'desk-pv-note', text: '保存後、数分で本番に反映されます。' }),
+        ]);
+
+        const body = el('div', { class: 'desk-pv-body' });
+        if (state.draft) {
+          body.appendChild(buildPreviewNode(state.sectionId, state.draft));
+        } else {
+          body.appendChild(el('p', { class: 'desk-pv-empty', text: 'セクションを選択するとプレビューが表示されます。' }));
+        }
+
+        pv.innerHTML = '';
+        pv.appendChild(head);
+        pv.appendChild(body);
+      }
+
+      // =====================================================================
       // NAVIGATION / ACTIONS
       // =====================================================================
       function go(v) {
@@ -2291,11 +2885,19 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           state.store[sec.key] = { data: res.data, sha: res.sha };
           state.saving = false;
           toast(
-            "保存しました。数分で本番に反映されます。 " +
-            `<a href="${SITE_URL}" target="_blank" rel="noopener">本番を確認</a>`,
-            { icon: true }
+            `保存しました。数分で本番に反映されます。 <a href="${SITE_URL}" target="_blank" rel="noopener noreferrer" style="color:#9ec2ff;font-weight:700">本番を確認 ↗</a>`,
+            { icon: true, duration: 8000 }
           );
-          go(sec.kind === "object" ? "home" : "list");
+          if (isDesktop()) {
+            renderSidebar();
+            state.draft = null;
+            state.draftIndex = null;
+            if (sec.kind === "array") renderDesktopList();
+            else renderDesktopSection();
+            renderDesktopPreview();
+          } else {
+            go(sec.kind === "object" ? "home" : "list");
+          }
         } catch (err) {
           state.saving = false;
           renderBar();
@@ -2338,6 +2940,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           const res = await apiSave(sec.key, arr, entry.sha, `Update ${sec.key} via CMS`);
           state.store[sec.key] = { data: res.data, sha: res.sha };
           renderList();
+          if (isDesktop()) { renderSidebar(); renderDesktopList(); }
           toast(okMsg);
         } catch (err) {
           // M1: 古いshaに戻さない。最新を再取得してストアを更新し再描画
@@ -2365,22 +2968,42 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
             state.store[key] = { data: key === "banner" ? {} : [], sha: null, error: err.message };
           }
           if (state.view === "home") renderHome();
+          if (isDesktop() && state.view !== 'edit') renderSidebar();
         }));
         state.loading = false;
         if (state.view === "home") renderHome();
+        if (isDesktop()) {
+          renderSidebar();
+          // 起動直後: object型(バナー)は load前に default で seed されているため、
+          // 実データで draft を作り直してから再描画する。
+          const sec = SECTIONS[state.sectionId];
+          if (sec && sec.kind === "object" && state.draftIndex === 0) {
+            const entry = state.store[sec.key];
+            state.draft = deepClone(entry?.data || defaultDraft(state.sectionId));
+          }
+          renderDesktopSection();
+        }
       }
 
       function enterApp() {
         $("login").classList.add("hidden");
-        $("app").classList.remove("hidden");
-        go("home");
+        if (isDesktop()) {
+          enterDesktop();
+        } else {
+          $("app").classList.remove("hidden");
+          go("home");
+        }
         loadAll();
       }
       function logout() {
+        const deskApp = document.getElementById('appDesktop');
+        if (deskApp) deskApp.classList.add('hidden');
         revokeAllLocalUrls();
         sessionStorage.removeItem(PW_STORE_KEY);
         state.password = "";
         state.store = {};
+        state.draft = null;
+        state.draftIndex = null;
         $("app").classList.add("hidden");
         $("login").classList.remove("hidden");
         $("loginPw").value = "";
@@ -2416,6 +3039,29 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         const saved = sessionStorage.getItem(PW_STORE_KEY);
         if (saved) { state.password = saved; enterApp(); }
       })();
+
+      // Resize: switch layout when crossing 1024px breakpoint
+      let _wasDesktop = isDesktop();
+      window.addEventListener('resize', () => {
+        const nowDesktop = isDesktop();
+        if (nowDesktop === _wasDesktop) return;
+        _wasDesktop = nowDesktop;
+        if (!state.password) return; // not logged in
+        revokeAllLocalUrls();
+        if (nowDesktop) {
+          $('app').classList.add('hidden');
+          if (!state.sectionId) state.sectionId = SECTION_ORDER[0];
+          state.draft = null;
+          state.draftIndex = null;
+          enterDesktop();
+        } else {
+          document.getElementById('appDesktop').classList.add('hidden');
+          $('app').classList.remove('hidden');
+          state.draft = null;
+          state.draftIndex = null;
+          go('home');
+        }
+      });
 
     </script>
   </body>
