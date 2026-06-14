@@ -218,9 +218,11 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       }
       .bar-slot {
         flex: 0 0 auto;
-        min-width: 38px;
+        min-width: 44px;
         display: flex;
         justify-content: flex-end;
+        gap: 2px;
+        align-items: center;
       }
       .bar-ghost {
         font-size: 13px;
@@ -228,6 +230,189 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         color: var(--ink-3);
         padding: 8px 10px;
         border-radius: 999px;
+      }
+
+      /* --- Hamburger button (mobile only) ---------------------------------- */
+      .ham-btn {
+        flex: 0 0 auto;
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        color: var(--ink);
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .ham-btn:active { background: var(--blue-soft); }
+      .ham-btn svg { width: 22px; height: 22px; display: block; }
+      @media (min-width: 1024px) { .ham-btn { display: none !important; } }
+
+      /* --- Drawer scrim (mobile only) -------------------------------------- */
+      .ham-scrim {
+        position: fixed;
+        inset: 0;
+        z-index: 49;
+        background: rgba(14, 23, 38, 0.46);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s var(--ease);
+      }
+      .ham-scrim.is-open { opacity: 1; pointer-events: auto; }
+      @media (min-width: 1024px) { .ham-scrim { display: none !important; } }
+
+      /* --- Drawer panel (mobile only) -------------------------------------- */
+      .ham-drawer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 50;
+        width: 272px;
+        max-width: calc(100vw - 56px);
+        background: var(--nav-bg, #1e2330);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transform: translateX(-100%);
+        transition: transform 0.28s var(--ease);
+        box-shadow: 4px 0 32px rgba(14, 23, 38, 0.28);
+      }
+      .ham-drawer.is-open { transform: translateX(0); }
+      @media (min-width: 1024px) { .ham-drawer { display: none !important; } }
+
+      /* drawer header */
+      .ham-drawer-head {
+        flex: 0 0 auto;
+        height: 56px;
+        padding-top: var(--safe-t);
+        box-sizing: content-box;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-inline: 18px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      }
+      .ham-drawer-brand-ico {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        background: #1463ff;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 900;
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+      }
+      .ham-drawer-brand-name {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: rgba(255, 255, 255, 0.88);
+        flex: 1 1 auto;
+      }
+      .ham-drawer-close {
+        flex: 0 0 auto;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        color: rgba(255, 255, 255, 0.5);
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+      .ham-drawer-close:hover { background: rgba(255,255,255,0.08); color: #fff; }
+      .ham-drawer-close svg { width: 18px; height: 18px; }
+
+      /* drawer nav */
+      .ham-drawer-nav {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 8px 0 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.1) transparent;
+      }
+      .ham-drawer-nav::-webkit-scrollbar { width: 4px; }
+      .ham-drawer-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+      /* drawer tabs (reuse desktop side-tab visual) */
+      .ham-tab {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 0;
+        border: none;
+        background: none;
+        cursor: pointer;
+        text-align: left;
+        color: rgba(255, 255, 255, 0.65);
+        font-family: inherit;
+        transition: color 0.13s;
+      }
+      .ham-tab-inner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px 16px 10px 14px;
+        border-left: 3px solid transparent;
+        transition: background 0.13s, border-color 0.13s;
+      }
+      .ham-tab:hover .ham-tab-inner { background: rgba(255,255,255,0.06); }
+      .ham-tab:hover { color: rgba(255,255,255,0.9); }
+      .ham-tab.is-active { color: #fff; }
+      .ham-tab.is-active .ham-tab-inner {
+        background: rgba(20,99,255,0.22);
+        border-left-color: #1463ff;
+      }
+      .ham-tab-ico {
+        flex: 0 0 auto;
+        font-size: 17px;
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        border-radius: 7px;
+        background: rgba(255,255,255,0.08);
+        line-height: 1;
+        transition: background 0.13s;
+      }
+      .ham-tab.is-active .ham-tab-ico { background: rgba(20,99,255,0.35); }
+      .ham-tab-tx { flex: 1 1 auto; min-width: 0; }
+      .ham-tab-name {
+        font-size: 13px;
+        font-weight: 600;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.3;
+      }
+      .ham-tab-meta {
+        font-size: 11px;
+        display: block;
+        margin-top: 1px;
+        color: rgba(255,255,255,0.42);
+        font-weight: 500;
+      }
+      .ham-tab.is-active .ham-tab-meta { color: rgba(255,255,255,0.55); }
+      .ham-section-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: rgba(255,255,255,0.38);
+        padding: 12px 18px 4px;
+        text-transform: uppercase;
       }
 
       /* --- Main scroll area ---------------------------------------------- */
@@ -1774,6 +1959,19 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       </main>
     </div>
 
+    <!-- HAMBURGER DRAWER (mobile only) -->
+    <div id="hamScrim" class="ham-scrim" aria-hidden="true"></div>
+    <div id="hamDrawer" class="ham-drawer" role="dialog" aria-modal="true" aria-label="セクションメニュー">
+      <div class="ham-drawer-head">
+        <span class="ham-drawer-brand-ico">S</span>
+        <span class="ham-drawer-brand-name">SELLPRO CMS</span>
+        <button id="hamClose" class="ham-drawer-close" type="button" aria-label="メニューを閉じる">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <nav id="hamNav" class="ham-drawer-nav" aria-label="コンテンツセクション"></nav>
+    </div>
+
     <!-- APP DESKTOP (3-pane, hidden on mobile) -->
     <div id="appDesktop" class="app-desktop hidden">
       <header class="desk-header">
@@ -2010,6 +2208,131 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         });
 
       // =====================================================================
+      // HAMBURGER DRAWER (mobile only)
+      // =====================================================================
+      let _hamTriggerEl = null; // フォーカス復帰先
+
+      function renderHamNav() {
+        const nav = $('hamNav');
+        if (!nav) return;
+        nav.innerHTML = '';
+        // section label
+        nav.appendChild(el('p', { class: 'ham-section-label', text: 'コンテンツ' }));
+        SECTION_ORDER.forEach(sid => {
+          const sec = SECTIONS[sid];
+          const entry = state.store[sec.key];
+          let metaTxt = '';
+          if (state.loading || !entry) {
+            metaTxt = '…';
+          } else if (sec.kind === 'object') {
+            metaTxt = entry.data?.enabled ? '表示中' : '非表示';
+          } else {
+            metaTxt = `${Array.isArray(entry.data) ? entry.data.length : 0}件`;
+          }
+          const isActive = state.sectionId === sid;
+          const tab = el('button', {
+            class: 'ham-tab' + (isActive ? ' is-active' : ''),
+            type: 'button',
+            'aria-current': isActive ? 'page' : 'false',
+            onClick: () => switchSectionFromDrawer(sid),
+          }, [
+            el('div', { class: 'ham-tab-inner' }, [
+              el('span', { class: 'ham-tab-ico', text: sec.icon }),
+              el('span', { class: 'ham-tab-tx' }, [
+                el('span', { class: 'ham-tab-name', text: sec.name }),
+                el('span', { class: 'ham-tab-meta', text: metaTxt }),
+              ]),
+            ]),
+          ]);
+          nav.appendChild(tab);
+        });
+      }
+
+      async function switchSectionFromDrawer(sid) {
+        // dirty check: 編集中に未保存があれば確認
+        if (state.view === 'edit' && isDirty()) {
+          const ok = await confirmDialog({
+            title: '編集をやめますか？',
+            message: '保存していない変更は反映されません。',
+            okLabel: '編集をやめる', danger: true,
+          });
+          if (!ok) return;
+          revokeAllLocalUrls();
+        } else if (state.view === 'edit') {
+          revokeAllLocalUrls();
+        }
+        closeDrawer();
+        state.sectionId = sid;
+        openSection(sid);
+      }
+
+      function openDrawer() {
+        const drawer = $('hamDrawer');
+        const scrim = $('hamScrim');
+        if (!drawer || !scrim) return;
+        _hamTriggerEl = document.activeElement; // フォーカス復帰先を記憶
+        renderHamNav();
+        drawer.classList.add('is-open');
+        scrim.classList.add('is-open');
+        scrim.removeAttribute('aria-hidden');
+        // スクロールロック
+        document.body.style.overflow = 'hidden';
+        // フォーカストラップ: ドロワー内最初のフォーカス可能要素にフォーカス
+        const focusable = drawer.querySelectorAll('button, [href], input, [tabindex]:not([tabindex="-1"])');
+        if (focusable.length) focusable[0].focus();
+        // キーハンドラ
+        document.addEventListener('keydown', _onDrawerKey);
+      }
+
+      function closeDrawer() {
+        const drawer = $('hamDrawer');
+        const scrim = $('hamScrim');
+        if (!drawer || !scrim) return;
+        drawer.classList.remove('is-open');
+        scrim.classList.remove('is-open');
+        scrim.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', _onDrawerKey);
+        // トリガへフォーカス復帰
+        if (_hamTriggerEl && typeof _hamTriggerEl.focus === 'function') {
+          try { _hamTriggerEl.focus(); } catch (_) {}
+        }
+        _hamTriggerEl = null;
+      }
+
+      function _onDrawerKey(e) {
+        const drawer = $('hamDrawer');
+        if (!drawer) return;
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closeDrawer();
+          return;
+        }
+        // フォーカストラップ (Tab / Shift+Tab)
+        if (e.key === 'Tab') {
+          const focusable = Array.from(drawer.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )).filter(el => el.offsetParent !== null);
+          if (!focusable.length) { e.preventDefault(); return; }
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (e.shiftKey) {
+            if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+          } else {
+            if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+          }
+        }
+      }
+
+      // スクリム・閉じるボタンのイベント登録（スクリプトは body 末尾なので即時実行可）
+      (() => {
+        const scrim = $('hamScrim');
+        if (scrim) scrim.addEventListener('click', closeDrawer);
+        const closeBtn = $('hamClose');
+        if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+      })();
+
+      // =====================================================================
       // API（既存 admin-content・契約どおり）
       // =====================================================================
       async function apiGet(key) {
@@ -2054,12 +2377,27 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       // =====================================================================
       // BAR — タイトル / 戻る / 保存 を状態から描画
       // =====================================================================
+      const HAM_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>';
+
+      function makeHamBtn() {
+        return el('button', {
+          class: 'ham-btn', type: 'button',
+          'aria-label': 'メニュー', 'aria-expanded': 'false',
+          id: 'hamTrigger',
+          html: HAM_SVG,
+          onClick: () => openDrawer(),
+        });
+      }
+
       function renderBar() {
         const left = $("barLeft");
         const right = $("barRight");
         const title = $("barTitle");
         left.innerHTML = "";
         right.innerHTML = "";
+
+        // ハンバーガーは全ビューで常時表示（モバイルのみ）
+        left.appendChild(makeHamBtn());
 
         if (state.view === "home") {
           title.textContent = "コンテンツ";
@@ -3052,9 +3390,11 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           }
           if (state.view === "home") renderHome();
           if (isDesktop() && state.view !== 'edit') renderSidebar();
+          if (!isDesktop()) renderHamNav();
         }));
         state.loading = false;
         if (state.view === "home") renderHome();
+        if (!isDesktop()) renderHamNav();
         if (isDesktop()) {
           renderSidebar();
           // 起動直後: object型(バナー)は load前に default で seed されているため、
@@ -3082,6 +3422,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       function logout() {
         const deskApp = document.getElementById('appDesktop');
         if (deskApp) deskApp.classList.add('hidden');
+        closeDrawer(); // ドロワーが開いていれば閉じる
         revokeAllLocalUrls();
         sessionStorage.removeItem(PW_STORE_KEY);
         state.password = "";
