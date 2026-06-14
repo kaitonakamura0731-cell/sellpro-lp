@@ -5,11 +5,15 @@ const BRANCH = process.env.GITHUB_BRANCH || "main";
 /** アップロード先フォルダの許可リスト */
 const FOLDER_ALLOWLIST = new Set(["banner", "logos", "product", "docs"]);
 
-/** フォルダごとに許可する拡張子 */
+/**
+ * フォルダごとに許可する拡張子。
+ * SVG はスクリプトを内包でき公開オリジンに保存されるため、SVG ロゴが必要な logos のみ許可し、
+ * banner / product のラスター用途では除外する（保管型 XSS の面を縮小）。
+ */
 const EXT_ALLOWLIST = {
-  banner: new Set(["png", "jpg", "jpeg", "webp", "svg", "gif"]),
+  banner: new Set(["png", "jpg", "jpeg", "webp", "gif"]),
   logos: new Set(["png", "jpg", "jpeg", "webp", "svg", "gif"]),
-  product: new Set(["png", "jpg", "jpeg", "webp", "svg", "gif"]),
+  product: new Set(["png", "jpg", "jpeg", "webp", "gif"]),
   docs: new Set(["pdf"]),
 };
 

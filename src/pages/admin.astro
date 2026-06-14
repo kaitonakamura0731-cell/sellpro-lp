@@ -44,7 +44,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
 
         --ink: #0e1726;
         --ink-2: #44506a;
-        --ink-3: #8a93a6;
+        --ink-3: #6b748a;
 
         --bg: #f4f6fb;
         --card: #ffffff;
@@ -124,7 +124,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         text-decoration: none;
       }
       :focus-visible {
-        outline: 3px solid var(--blue-ring);
+        outline: 3px solid var(--blue);
         outline-offset: 2px;
       }
 
@@ -501,6 +501,10 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         background: #fff4e5;
         color: #b06d00;
       }
+      .tag-off {
+        background: #eef0f6;
+        color: #6b748a;
+      }
       .item-actions {
         flex: 0 0 auto;
         display: flex;
@@ -508,8 +512,8 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         gap: 4px;
       }
       .ic-btn {
-        width: 34px;
-        height: 30px;
+        width: 36px;
+        height: 36px;
         display: grid;
         place-items: center;
         border-radius: 9px;
@@ -536,7 +540,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         flex: 0 0 auto;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 3px;
       }
 
       /* ===================================================================
@@ -655,6 +659,8 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         font-size: 13px;
         text-align: center;
         padding: 14px;
+        max-width: 520px;
+        max-height: 360px;
       }
       .up-preview.is-logo {
         aspect-ratio: 1 / 1;
@@ -827,6 +833,28 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         display: flex;
         flex-direction: column;
         gap: 12px;
+      }
+      .btn-primary-full {
+        width: 100%;
+        height: 54px;
+        border-radius: var(--r-md);
+        font-size: 16px;
+        font-weight: 700;
+        color: #fff;
+        background: var(--blue);
+        box-shadow: 0 4px 16px var(--blue-ring);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.1s var(--ease), opacity 0.15s;
+      }
+      .btn-primary-full:active {
+        transform: scale(0.985);
+      }
+      .btn-primary-full[disabled] {
+        opacity: 0.55;
+        pointer-events: none;
+        box-shadow: none;
       }
       .btn-preview {
         width: 100%;
@@ -1485,7 +1513,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.1em;
-        color: rgba(255,255,255,0.28);
+        color: rgba(255,255,255,0.42);
         padding: 14px 18px 5px;
         text-transform: uppercase;
       }
@@ -1536,8 +1564,12 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         display: grid;
         place-items: center;
         border-radius: 7px;
+        background: rgba(255,255,255,0.08);
         transition: background 0.13s;
         line-height: 1;
+      }
+      .side-tab.is-active .side-tab-ico {
+        background: rgba(20,99,255,0.35);
       }
       .side-tab-tx {
         flex: 1 1 auto;
@@ -1556,7 +1588,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         font-size: 11px;
         display: block;
         margin-top: 1px;
-        color: rgba(255,255,255,0.38);
+        color: rgba(255,255,255,0.55);
         font-weight: 500;
       }
       .side-tab.is-active .side-tab-meta {
@@ -1633,6 +1665,9 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         flex: 1 1 auto;
         padding: 22px 24px 48px;
         overflow-y: auto;
+        max-width: 740px;
+        margin-inline: auto;
+        width: 100%;
       }
       /* center list top bar */
       .desk-list-head {
@@ -1721,7 +1756,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           autocomplete="current-password"
         />
         <button id="loginBtn" class="login-btn" type="submit">ログイン</button>
-        <p id="loginErr" class="login-err hidden"></p>
+        <p id="loginErr" class="login-err hidden" role="alert" aria-live="assertive"></p>
       </form>
     </div>
 
@@ -1761,7 +1796,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
     <!-- OVERLAY / TOAST / DIALOG mount points -->
     <div id="overlay"></div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <div id="dlgBack" class="dlg-back" role="dialog" aria-modal="true">
+    <div id="dlgBack" class="dlg-back" role="dialog" aria-modal="true" aria-labelledby="dlgT">
       <div class="dlg">
         <h2 id="dlgT" class="dlg-t"></h2>
         <p id="dlgM" class="dlg-m"></p>
@@ -1827,6 +1862,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         // M3: 編集フォーム中のアップロード直後ObjectURL保持
         // field識別子("banner.image" / "avatar" / "logo") -> ObjectURL
         localUrls: {},
+        _draftSnapshot: null,  // dirty検知スナップショット
       };
 
       const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
@@ -1834,6 +1870,17 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       // Preview refresh (debounced via rAF for live preview on desktop)
       let _pvRafId = null;
       function schedulePreviewRefresh() {
+        // 保存ボタンの活性状態を即時更新
+        const saveBtn = document.querySelector('.desk-save-btn');
+        if (saveBtn && !state.saving) {
+          if (isDirty()) saveBtn.removeAttribute('disabled');
+          else saveBtn.setAttribute('disabled', '');
+        }
+        const barSave = document.querySelector('.bar-save');
+        if (barSave && !state.saving) {
+          if (isDirty()) barSave.removeAttribute('disabled');
+          else barSave.setAttribute('disabled', '');
+        }
         if (!isDesktop() || !state.draft) return;
         if (_pvRafId) cancelAnimationFrame(_pvRafId);
         _pvRafId = requestAnimationFrame(() => { _pvRafId = null; renderDesktopPreview(); });
@@ -2032,7 +2079,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
             class: "bar-save", type: "button", text: state.saving ? "保存中…" : "保存",
             onClick: () => saveDraft(),
           });
-          if (state.saving) save.setAttribute("disabled", "");
+          if (state.saving || !isDirty()) save.setAttribute("disabled", "");
           right.appendChild(save);
         }
       }
@@ -2207,8 +2254,13 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         else if (state.sectionId === "logos") buildLogoForm(form);
         else if (state.sectionId === "faqs") buildFaqForm(form);
 
-        // フッタ: プレビュー
+        // フッタ: 保存 + プレビュー
         form.appendChild(el("div", { class: "form-foot" }, [
+          el("button", {
+            class: "btn-primary-full", type: "button",
+            text: state.saving ? "保存中…" : "保存する",
+            onClick: () => saveDraft(),
+          }),
           el("button", { class: "btn-preview", type: "button", onClick: () => openPreview() }, [
             el("span", { html: ICON.eye }), el("span", { text: "プレビューを見る" }),
           ]),
@@ -2218,26 +2270,29 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
       }
 
       // --- 汎用フィールド部品 -------------------------------------------------
+      let _fieldIdCtr = 0;
       const fieldText = (label, help, value, onInput, opts = {}) => {
+        const fid = 'f' + (++_fieldIdCtr);
         const inp = el("input", {
-          class: "input", type: opts.type || "text", value: value ?? "",
+          id: fid, class: "input", type: opts.type || "text", value: value ?? "",
           placeholder: opts.placeholder || "", inputmode: opts.inputmode || null,
           onInput: (e) => { onInput(e.target.value); schedulePreviewRefresh(); },
         });
         return el("div", { class: "field" }, [
-          el("label", { class: "field-label", text: label }),
+          el("label", { class: "field-label", for: fid, text: label }),
           help ? el("p", { class: "field-help", text: help }) : null,
           inp,
         ]);
       };
       const fieldArea = (label, help, value, onInput, opts = {}) => {
+        const fid = 'f' + (++_fieldIdCtr);
         const ta = el("textarea", {
-          class: "textarea", placeholder: opts.placeholder || "",
+          id: fid, class: "textarea", placeholder: opts.placeholder || "",
           rows: opts.rows || 4, onInput: (e) => { onInput(e.target.value); schedulePreviewRefresh(); },
         });
         ta.value = value ?? "";
         return el("div", { class: "field" }, [
-          el("label", { class: "field-label", text: label }),
+          el("label", { class: "field-label", for: fid, text: label }),
           help ? el("p", { class: "field-help", text: help }) : null,
           ta,
         ]);
@@ -2275,7 +2330,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
 
         const up = el("div", { class: "uploader" });
         const previewBox = el("div", { class: "up-preview is-" + shape });
-        const status = el("p", { class: "up-status hidden" });
+        const status = el("p", { class: "up-status hidden", role: "status", "aria-live": "polite" });
 
         // M3: ローカルObjectURL優先、なければストア値を解決
         const currentPreviewSrc = () => {
@@ -2514,17 +2569,19 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         frame.appendChild(buildPreviewNode(state.sectionId, state.draft));
         body.appendChild(frame);
 
-        const overlay = el("div", { class: "ov" }, [
+        const onEsc = (e) => { if (e.key === 'Escape') { ov.innerHTML = ''; document.removeEventListener('keydown', onEsc); } };
+        const overlay = el("div", { class: "ov", role: "dialog", "aria-modal": "true", "aria-label": sec.name + " プレビュー" }, [
           el("div", { class: "ov-bar" }, [
             el("span", { class: "ov-title", text: sec.name + " プレビュー" }),
             el("span", { class: "ov-badge", text: "表示イメージ" }),
             el("button", { class: "ov-close", type: "button", "aria-label": "閉じる",
-              html: ICON.x, onClick: () => { ov.innerHTML = ""; } }),
+              html: ICON.x, onClick: () => { ov.innerHTML = ""; document.removeEventListener('keydown', onEsc); } }),
           ]),
           body,
         ]);
         ov.innerHTML = "";
         ov.appendChild(overlay);
+        document.addEventListener('keydown', onEsc);
       }
 
       function buildPreviewNode(sid, d) {
@@ -2600,6 +2657,9 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         const nav = document.getElementById('deskSidebar');
         if (!nav) return;
         nav.innerHTML = '';
+        // コンテンツセクションラベル
+        const label = el('p', { class: 'side-label', text: 'コンテンツ' });
+        nav.appendChild(label);
         SECTION_ORDER.forEach(sid => {
           const sec = SECTIONS[sid];
           const entry = state.store[sec.key];
@@ -2614,7 +2674,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           const tab = el('button', {
             class: 'side-tab' + (state.sectionId === sid ? ' is-active' : ''),
             type: 'button',
-            'aria-pressed': state.sectionId === sid ? 'true' : 'false',
+            'aria-current': state.sectionId === sid ? 'page' : 'false',
             onClick: () => {
               revokeAllLocalUrls();
               state.sectionId = sid;
@@ -2649,6 +2709,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           // Banner: go straight to edit
           const entry = state.store[sec.key];
           state.draft = deepClone(entry?.data || defaultDraft(state.sectionId));
+          state._draftSnapshot = JSON.stringify(state.draft);
           state.draftIndex = 0;
           renderDesktopEdit();
         } else {
@@ -2665,12 +2726,17 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         const center = document.getElementById('deskCenter');
 
         const head = el('div', { class: 'desk-center-head' }, [
-          el('h2', { class: 'desk-center-title' }, [
-            el('span', { text: sec.icon + '  ' }),
-            el('span', { text: sec.name }),
+          el('div', { style: 'min-width:0;flex:1 1 auto' }, [
+            el('h2', { class: 'desk-center-title', style: 'margin:0' }, [
+              el('span', { text: sec.icon + '  ' }),
+              el('span', { text: sec.name }),
+            ]),
+            el('p', { class: 'desk-section-desc', style: 'margin:2px 0 0', text: sec.desc }),
           ]),
           el('button', { class: 'btn-add', type: 'button', onClick: () => {
+            revokeAllLocalUrls();
             state.draft = defaultDraft(state.sectionId);
+            state._draftSnapshot = JSON.stringify(state.draft);
             state.draftIndex = null;
             renderDesktopEdit();
             renderDesktopPreview();
@@ -2693,7 +2759,9 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
             const tapBtn = card.querySelector('.item-tap');
             if (tapBtn) {
               tapBtn.onclick = () => {
+                revokeAllLocalUrls();
                 state.draft = deepClone(entry.data[i]);
+                state._draftSnapshot = JSON.stringify(state.draft);
                 state.draftIndex = i;
                 renderDesktopEdit();
                 renderDesktopPreview();
@@ -2705,7 +2773,9 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
             const editBtn = editBtns[editBtns.length - 1];
             if (editBtn) {
               editBtn.onclick = () => {
+                revokeAllLocalUrls();
                 state.draft = deepClone(entry.data[i]);
+                state._draftSnapshot = JSON.stringify(state.draft);
                 state.draftIndex = i;
                 renderDesktopEdit();
                 renderDesktopPreview();
@@ -2744,7 +2814,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           text: state.saving ? '保存中…' : '保存',
           onClick: () => saveDraft(),
         });
-        if (state.saving) saveBtn.setAttribute('disabled', '');
+        if (state.saving || !isDirty()) saveBtn.setAttribute('disabled', '');
 
         const head = el('div', { class: 'desk-center-head' }, [
           el('h2', { class: 'desk-center-title' }, titleContent),
@@ -2778,7 +2848,11 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         if (state.draft) {
           body.appendChild(buildPreviewNode(state.sectionId, state.draft));
         } else {
-          body.appendChild(el('p', { class: 'desk-pv-empty', text: 'セクションを選択するとプレビューが表示されます。' }));
+          const sec2 = SECTIONS[state.sectionId];
+          body.appendChild(el('div', { class: 'desk-pv-empty' }, [
+            el('div', { style: 'font-size:32px;margin-bottom:8px', text: sec2 ? sec2.icon : '' }),
+            el('p', { style: 'margin:0', text: '編集する項目を選ぶとプレビューが表示されます' }),
+          ]));
         }
 
         pv.innerHTML = '';
@@ -2807,6 +2881,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           // バナー: 直接編集
           const entry = state.store[sec.key];
           state.draft = deepClone(entry?.data || defaultDraft(sid));
+          state._draftSnapshot = JSON.stringify(state.draft);
           state.draftIndex = 0; // 単体は固定
           go("edit");
         } else {
@@ -2819,9 +2894,11 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         const entry = state.store[sec.key];
         if (index === null) {
           state.draft = defaultDraft(state.sectionId);
+          state._draftSnapshot = JSON.stringify(state.draft);
           state.draftIndex = null;
         } else {
           state.draft = deepClone(entry.data[index]);
+          state._draftSnapshot = JSON.stringify(state.draft);
           state.draftIndex = index;
         }
         go("edit");
@@ -2838,15 +2915,17 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         }
       }
       const deepClone = (o) => JSON.parse(JSON.stringify(o));
+      const isDirty = () => state.draft !== null && JSON.stringify(state.draft) !== state._draftSnapshot;
 
       async function onLeaveEdit() {
-        // 単純運用: 確認ダイアログで離脱。差分検知は最小限。
-        const ok = await confirmDialog({
-          title: "編集をやめますか？",
-          message: "保存していない変更は反映されません。",
-          okLabel: "編集をやめる", danger: true,
-        });
-        if (!ok) return;
+        if (isDirty()) {
+          const ok = await confirmDialog({
+            title: "編集をやめますか？",
+            message: "保存していない変更は反映されません。",
+            okLabel: "編集をやめる", danger: true,
+          });
+          if (!ok) return;
+        }
         const sec = SECTIONS[state.sectionId];
         go(sec.kind === "object" ? "home" : "list");
       }
@@ -2884,11 +2963,13 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           const res = await apiSave(sec.key, nextData, entry.sha, `Update ${sec.key} via CMS`);
           state.store[sec.key] = { data: res.data, sha: res.sha };
           state.saving = false;
+          state._draftSnapshot = null;  // dirty解除
           toast(
             `保存しました。数分で本番に反映されます。 <a href="${SITE_URL}" target="_blank" rel="noopener noreferrer" style="color:#9ec2ff;font-weight:700">本番を確認 ↗</a>`,
             { icon: true, duration: 8000 }
           );
           if (isDesktop()) {
+            revokeAllLocalUrls();
             renderSidebar();
             state.draft = null;
             state.draftIndex = null;
@@ -2936,6 +3017,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
         // 楽観更新でUIを即反映
         state.store[sec.key] = { data: arr, sha: entry.sha };
         renderList();
+        if (isDesktop()) { renderSidebar(); renderDesktopList(); }
         try {
           const res = await apiSave(sec.key, arr, entry.sha, `Update ${sec.key} via CMS`);
           state.store[sec.key] = { data: res.data, sha: res.sha };
@@ -2949,6 +3031,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
             state.store[sec.key] = { data: fresh.data, sha: fresh.sha };
           } catch (_) { /* 再取得失敗は無視 */ }
           renderList();
+          if (isDesktop()) { renderSidebar(); renderDesktopList(); }
           toast(esc(err.message) + " — 最新の状態に更新しました。もう一度お試しください。", { error: true, icon: false, duration: 6000 });
         }
       }
@@ -2980,6 +3063,7 @@ const PAGE_TITLE = "SellPro コンテンツ管理";
           if (sec && sec.kind === "object" && state.draftIndex === 0) {
             const entry = state.store[sec.key];
             state.draft = deepClone(entry?.data || defaultDraft(state.sectionId));
+            state._draftSnapshot = JSON.stringify(state.draft);
           }
           renderDesktopSection();
         }
