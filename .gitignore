@@ -2,5 +2,7 @@ node_modules/
 dist/
 .vercel/
 .astro/
-_verify/
+.omc/
+_verify*/
+REVIEW.md
 .DS_Store

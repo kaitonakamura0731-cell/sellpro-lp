@@ -53,10 +53,10 @@
 ```json
 {
   "enabled": true,
-  "image": "banner/sample-banner.webp",
-  "alt": "ウェビナー告知バナー（サンプル）",
-  "link": "https://onesteps.co.jp/",
-  "newTab": true
+  "image": "banner/banner-docs.webp",
+  "alt": "SellPro ご紹介資料 無料ダウンロード",
+  "link": "/docs/",
+  "newTab": false
 }
 ```
 
@@ -151,7 +151,7 @@
 ## ローカルでの確認
 
 ```bash
-cd ~/projects/clients/sellpro/site
+# プロジェクトルートで実行
 npm run build
 git push origin main
 ```
@@ -161,4 +161,5 @@ git push origin main
 ## 注意
 
 - JSONのカンマ抜け、括弧の閉じ忘れがあると保存やビルドが失敗します。
-- `ATLAS` や `双日` の表記は入れないでください。
+- `atlas` / `Atlas Shift` の表記は入れないでください。制作元の社名であり、SellProの公開サイト上に出すべき情報ではないためです。
+- `双日` の表記は入れないでください。本サービスと無関係の企業名であり、誤解や権利上の問題を避けるためです。

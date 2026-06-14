@@ -1,0 +1,70 @@
+---
+// 公開3ページ（index / docs / contact）共通の <head> を集約するベースレイアウト。
+// 各ページは title / description / canonical を渡し、ページ固有の JSON-LD は
+// <slot name="head"> へ、本文は既定 <slot> へ流し込む。
+interface Props {
+  /** <title> と og:title / twitter:title に使う */
+  title: string;
+  /** meta description と og/twitter description に使う */
+  description: string;
+  /** 正規URLのパス（例: "/", "/docs/", "/contact/"）。絶対URLは内部で生成する */
+  canonical: string;
+  /** OGP画像のパス（site 起点の絶対パス）。既定は製品OG画像 */
+  ogImage?: string;
+  /** true でこのページを検索インデックス対象外にする */
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description,
+  canonical,
+  ogImage = "/product/og.png",
+  noindex = false,
+} = Astro.props;
+
+const canonicalUrl = new URL(canonical, Astro.site).href;
+const ogImageUrl = new URL(ogImage, Astro.site).href;
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- OGP -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="979" />
+    <meta property="og:image:height" content="551" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content="SellPro（セルプロ）" />
+    <meta property="og:locale" content="ja_JP" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    <link rel="icon" href="/logos/sellpro.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <slot name="head" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

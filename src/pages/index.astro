@@ -1,10 +1,10 @@
 ---
-// SellPro LP — exa-1（exaBase寄せ・忠実再現派）
-// コンテンツは bold版（site/src/pages/index.astro）と同一。デザインのみ exaBase 調に再構成。
-// 一次情報: SellPro説明資料 2026.05.19。コピーは全て資料の事実に基づく
-// ルート配置。アセット参照は logos/... product/... の相対パス
-import "../styles/exa.css";
-import CtaBand from "../components/CtaBandExa.astro";
+// SellPro LP — トップページ
+// 一次情報: SellPro説明資料 2026.05.19。コピーはすべて資料の事実に基づく
+// ルート配置。アセット参照は logos/... product/... の絶対パス
+import BaseLayout from "../layouts/BaseLayout.astro";
+import "../styles/main.css";
+import CtaBand from "../components/CtaBand.astro";
 import FloatingBanner from "../components/FloatingBanner.astro";
 import FeatureMock from "../components/FeatureMock.astro";
 // 導入インタビューはコンテンツファイル方式。編集は src/data/interviews.json で行う。
@@ -20,7 +20,7 @@ const meta = {
     "スライド資料と議事録の作成をAIが代行。トンマナ学習で自社フォーマットのまま生成。資料作成工数を約30〜70%削減（※当社調べ）するAIエージェント「SellPro」。",
 };
 
-// 導入企業ロゴウォール 17社（harvest-map.json の logos セクション準拠）
+// 導入企業ロゴウォール
 // - ADIロゴは帝国不動産（teikoku.png）と同一企業のため重複掲載しない
 // → src/data/logos.json に外出し済み（上部の import logos を参照）
 
@@ -154,7 +154,24 @@ const hasSampleInterview = interviews.some((iv) => iv.sample === true);
 // FAQ（資料 Q&Aページの書き起こし。JSON-LD FAQPage と同一テキスト）
 // → src/data/faqs.json に外出し済み（上部の import faqs を参照）
 // 料金・トライアル・導入期間は資料に正式情報がないため、実質同文の3問を1問に統合した非断定回答
-//（料金の桁感・初期費用有無の開示可否は要確認 → 田山さんへ照会。正式情報の受領後に個別回答へ再分割して差し替える）。
+
+const siteUrl = Astro.site?.href ?? "/";
+const logoUrl = new URL("/logos/sellpro.svg", Astro.site).href;
+
+const ldOrganization = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "One StepS",
+  url: siteUrl,
+  logo: logoUrl,
+};
+
+const ldWebSite = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "SellPro（セルプロ）",
+  url: siteUrl,
+};
 
 const ldSoftware = {
   "@context": "https://schema.org",
@@ -162,8 +179,13 @@ const ldSoftware = {
   name: "SellPro",
   alternateName: "セルプロ",
   applicationCategory: "BusinessApplication",
+  applicationSubCategory: "AI資料作成・議事録作成",
   operatingSystem: "Web",
   description: meta.description,
+  offers: {
+    "@type": "Offer",
+    description: "要問い合わせ・無料トライアルあり",
+  },
   publisher: {
     "@type": "Organization",
     name: "株式会社One StepS",
@@ -187,38 +209,19 @@ const ldFaq = {
 };
 ---
 
-<!doctype html>
-<html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{meta.title}</title>
-    <meta name="description" content={meta.description} />
-    <!-- OGP: og:image は本番ドメイン確定後に絶対URLへ差し替える -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content={meta.title} />
-    <meta property="og:description" content={meta.description} />
-    <meta property="og:image" content="product/og.png" />
-    <meta property="og:site_name" content="SellPro（セルプロ）" />
-    <meta property="og:locale" content="ja_JP" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" href="logos/sellpro.svg" type="image/svg+xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&display=swap"
-      rel="stylesheet"
-    />
+<BaseLayout title={meta.title} description={meta.description} canonical="/">
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(ldOrganization)} is:inline></script>
+    <script type="application/ld+json" set:html={JSON.stringify(ldWebSite)} is:inline></script>
     <script type="application/ld+json" set:html={JSON.stringify(ldSoftware)} is:inline></script>
     <script type="application/ld+json" set:html={JSON.stringify(ldFaq)} is:inline></script>
-  </head>
-  <body>
+  </Fragment>
     <header class="site-header">
       <div class="header-inner">
         <a class="brand" href="#top" aria-label="SellPro トップへ">
           <img src="logos/sellpro.svg" alt="SellPro（セルプロ）ロゴ" width="489" height="140" />
         </a>
-        <!-- CASE.md「アンカーナビ少なめ」準拠: 常時表示は3本+CTAに絞り、全アンカーはメニュー内に収容 -->
+        <!-- ヘッダーナビ: 常時表示は3本+CTA、全アンカーはメニュー内に収容 -->
         <nav class="header-nav" aria-label="ページ内ナビゲーション">
           <a href="#features">機能</a>
           <a href="#reasons">選ばれる理由</a>
@@ -247,9 +250,7 @@ const ldFaq = {
     </header>
 
     <main id="top">
-      <!-- exaBase文法: ヒーロー + 数値バッジ を1枚の青帯に載せる -->
       <div class="hero-band">
-        <!-- 2026-06-11 田山さんFB「TOPは元（初回納品版）が良かった」: 生成背景画像を撤去し、初回納品のCSSグラデーション帯に復元 -->
         <!-- 1. ヒーロー -->
         <section class="hero">
           <!-- SP配置: 見出し→製品画像→訴求の縦流れ。PCは左右2カラムのまま、製品素材を青背景へ直接なじませる。 -->
@@ -263,7 +264,6 @@ const ldFaq = {
               </h1>
             </div>
             <div class="hero-visual">
-              <!-- 「SellPro ダッシュボード」タグは田山さんFBで削除（2026-06-11） -->
               <div class="frame">
                 <img
                   src="product/hero-material.webp"
@@ -583,8 +583,6 @@ const ldFaq = {
                           </span>
                         </div>
                       )}
-                      {/* viz=speaker(U4): 「議事録の行」リスト。各行=話者チップ(色分け)+発言バー2本を左揃えで整列し、
-                          PC/SP両方で「文字起こしの画面」と一目で分かる形に */}
                       {r.viz === "speaker" && (
                         <div class="rv-mins">
                           <div class="rvm-bar" aria-hidden="true">
@@ -665,10 +663,9 @@ const ldFaq = {
         </div>
       </section>
 
-      <!-- 3. セキュリティ信頼帯（exaBase: ヒーロー直後・グレースケールで控えめに） -->
+      <!-- 3. セキュリティ信頼帯 -->
       <section class="trust" aria-labelledby="trust-h">
         <div class="container">
-          <!-- 出典: 説明資料Q&A記載のセキュリティ対策（制作根拠メモ。画面には出さない） -->
           <div class="trust-head">
             <h2 id="trust-h">企業利用を前提とした設計。</h2>
             <span class="trust-head-line" aria-hidden="true"></span>
@@ -751,7 +748,6 @@ const ldFaq = {
             <h2 id="usecases-h">用途に合わせて、最適な資料を自動生成</h2>
             <p class="sec-lead">実際にSellProで生成した資料の例です。</p>
           </div>
-          {/* R5: 代表1枚（提案・説明スライド）をブラウザフレームで大きく見せ、残り2種はサムネ+ラベルに格下げ */}
           <div class="uc-feature">
             <figure class="uc-hero">
               <div class="ui-window">
@@ -830,7 +826,6 @@ const ldFaq = {
             <p class="story-loop"><span class="story-loop-ar" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M13 8a5 5 0 1 1-1.5-3.5M13 2v3h-3" stroke="#1c6fd2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg></span>提案が次の商談を生み、また議事録へ。<b>SellPro＝1つのエージェント</b>が、この循環を回し続けます。</p>
 
             <h3 class="scene-h2">こんなシーンで使われています</h3>
-            {/* R5: featuresと重複のため、2カラム箇条書き → チップ羅列1行ずつに圧縮 */}
             <div class="scene-chips">
               <div class="scene-chip-row">
                 <span class="sc-label">スライド生成</span>
@@ -939,8 +934,6 @@ const ldFaq = {
             <dd>株式会社One StepS（ワンステップス）</dd>
             <dd>東京都港区南青山3-8-40 青山センタービル2F-20</dd>
             <dd><a href="https://onesteps.co.jp/" target="_blank" rel="noopener">onesteps.co.jp</a></dd>
-            <!-- プライバシーポリシー正式URLは未確認（onesteps.co.jp/privacy はソフト404のためコーポレートトップへ暫定退避。
-                 田山さんへ照会中、確定後に正式URLへ差し替え） -->
             <dd><a href="https://onesteps.co.jp/" target="_blank" rel="noopener">プライバシーポリシー</a></dd>
             <dd><a href="/docs/">資料ダウンロード</a></dd>
           </dl>
@@ -989,5 +982,4 @@ const ldFaq = {
         groups.forEach(function (g) { io.observe(g); });
       })();
     </script>
-  </body>
-</html>
+</BaseLayout>

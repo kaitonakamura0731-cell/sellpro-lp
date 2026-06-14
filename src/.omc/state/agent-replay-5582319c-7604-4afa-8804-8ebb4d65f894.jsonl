@@ -1,3 +1,0 @@
-{"t":0,"agent":"a0d9ee7","agent_type":"workflow-subagent","event":"agent_start","parent_mode":"none"}
-{"t":0,"agent":"system","event":"skill_invoked","skill_name":"image2-gen"}
-{"t":0,"agent":"a0d9ee7","agent_type":"workflow-subagent","event":"agent_stop","success":true,"duration_ms":941424}

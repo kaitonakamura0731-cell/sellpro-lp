@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"echo \\\"=== FloatingBanner component ===\\\"; grep -rn \\\"活用事例\\\\|banner.json\\\\|alt\\\" src/components/FloatingBanner.astro 2>/dev/null; echo \\\"=== full line 11 search for 活用事例 substring ===\\\"; g...",
-  "error": "Exit code 2\n=== FloatingBanner component ===\nsrc/components/FloatingBanner.astro:3:// 表示内容は src/data/banner.json で差し替える（enabled / image / alt / link / newTab）。\nsrc/components/FloatingBanner.astro:5:import banner from \"../data/banner.json\";\nsrc/components/FloatingBanner.astro:26:        <img src={banner.image} alt={banner.alt} width=\"600\" height=\"220\" />\n=== full line 11 search for 活用事例 substring ===\nugrep: error: error at position 624\n\\xf4[\\x80-\\x8f][\\x80-\\xbf][\\x80-\\xbf]){0,40}\n               e...",
-  "timestamp": "2026-06-11T09:08:23.194Z",
-  "retry_count": 1
-}

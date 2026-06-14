@@ -1,21 +1,7 @@
 /* ============================================================
-   SellPro LP — exa-1（exaBase寄せ・忠実再現派）
-   レイアウト文法を exaBase 生成AI に寄せる:
-   - 白基調 + ビビッドな法人ブルーのヒーロー帯
-   - 数値バッジは白カード + 青の大型数字（金月桂樹エンブレムは2026-06-10レビューで撤去。
-     金色はSAMPLEチップ等の警告系のみに限定）
-   - 角丸大きめ(12-20px)・余白広め(セクション py 88-96px)
-   - カードは白 + 薄いボーダー + ごく柔らかい影
-   - 認証/信頼帯はグレースケールで控えめに
-   配色根拠: exaBaseの #0072CE 系アジュールを、SellPro資料青 #3A64B1 側へ
-   寄せた #1C6FD2 を主軸に。SellProロゴ水色 #5ECFEA をアクセントで併用。
-   フォントは Noto Sans JP のみ（Anton不使用・数字は太字で控えめに）。
-
-   2026-06-10 クライアント要望「もっとデジタルで透明感ある感じ」反映:
-   - 同系青グラデ（青→水色のみ。紫・ピンクは使わない）+ 薄青の半透明レイヤー
-   - ドットグリッド / 細い光のライン（1px）をヒーロー帯・CTA帯・セクション境界に
-   - カードは blur なしの半透明白 + 1px半透明ブルー枠（glassmorphism風の強blurは不使用）
-   - ロゴ水色 #5ECFEA を「光」のアクセントとして見出し下ライン等に使用
+   SellPro LP — メインスタイルシート
+   配色: 主軸 #1C6FD2（法人ブルー）/ アクセント #5ECFEA（ロゴ水色）
+   フォント: Noto Sans JP のみ
    ============================================================ */
 
 :root {
@@ -88,7 +74,7 @@ sup {
   padding-inline: 24px;
 }
 
-/* ---- ボタン（exaBase調: ピル型） ---- */
+/* ---- ボタン（ピル型） ---- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -132,7 +118,7 @@ summary:focus-visible {
   outline-offset: 2px;
 }
 
-/* ---- セクション見出し（exaBase: センター揃え・控えめサイズ） ---- */
+/* ---- セクション見出し（センター揃え・控えめサイズ） ---- */
 section {
   position: relative;
 }
@@ -142,9 +128,7 @@ section {
    - 圧縮してよいセクション=64px（reasons/interview/faq）
    - ロゴ帯=56px */
 .features,
-.tonmana,
 .usecases,
-.cases,
 .contact {
   padding: 96px 0;
 }
@@ -311,8 +295,7 @@ section {
     linear-gradient(152deg, #1b74d6 0%, #1667cb 48%, #1e4fa8 100%);
 }
 
-/* 2026-06-11 田山さんFB: 初回納品版のヒーロー帯（CSSグラデーションのみ）に復元。
-   生成背景画像レイヤー(.hero-bg)と装飾擬似要素は撤去・停止のまま */
+/* ヒーロー帯はCSSグラデーションのみ。装飾擬似要素は無効化済み */
 .hero-band::before {
   content: none;
   position: absolute;
@@ -376,7 +359,7 @@ section {
   color: #fff;
 }
 
-/* h1は初回納品版の3行構成（田山さんFBで復元） */
+/* h1 キャッチコピー: 3行構成 */
 .hero-head h1 em {
   font-style: normal;
   color: var(--cyan);
@@ -423,7 +406,7 @@ section {
   flex-wrap: wrap;
 }
 
-/* exaBaseヒーローの主ボタンは「白地に青文字」 */
+/* ヒーロー主ボタンは白地に青文字 */
 .hero .btn-vivid {
   background: #fff;
   color: var(--blue-deep);
@@ -881,7 +864,7 @@ section {
   transition: none;
 }
 
-/* ============ 選ばれる理由（exaBase: 2x2 淡青カード + 青角丸スクエア） ============ */
+/* ============ 選ばれる理由 ============ */
 /* R6: 連続する白セクションの章区切り。logos(白)直後の reasons に bg-soft を敷く。
    色が変わるので padding-top:0 をやめ、R1の64pxを通常どおり与える */
 .reasons {
@@ -964,7 +947,7 @@ section {
   flex: 1;
 }
 
-/* ============ 主な機能（exaBase: 淡背景 + 白カード3列） ============ */
+/* ============ 主な機能 ============ */
 .features {
   /* 薄青レイヤーの重なり: 水色グロー2つ + 同系の縦グラデ */
   background:
@@ -1135,170 +1118,6 @@ section {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-/* ============ トンマナ自動学習 ============ */
-.tonmana {
-  background: #fff;
-}
-
-.tm-steps {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr auto 1fr;
-  align-items: stretch;
-  gap: 16px;
-}
-
-.tm-step {
-  background: linear-gradient(165deg, rgba(28, 111, 210, 0.08), rgba(94, 207, 234, 0.13));
-  border: 1px solid rgba(28, 111, 210, 0.12);
-  border-radius: var(--r-md);
-  padding: 30px 26px;
-  text-align: center;
-}
-
-.st-no {
-  display: inline-block;
-  color: var(--blue-deep);
-  font-weight: 800;
-  font-size: 14px;
-  letter-spacing: 0.18em;
-  border-bottom: 2px solid var(--cyan);
-  padding-bottom: 2px;
-}
-
-.tm-art {
-  height: 100px;
-  display: grid;
-  place-items: center;
-  margin: 18px 0 14px;
-}
-
-.tm-step h3 {
-  font-size: 17.5px;
-  line-height: 1.6;
-  color: var(--navy);
-}
-
-.tm-step p {
-  margin-top: 8px;
-  font-size: 14.5px;
-  color: var(--muted);
-}
-
-.tm-arrow {
-  align-self: center;
-}
-
-.tm-arrow svg {
-  width: 22px;
-  height: 22px;
-}
-
-.ai-circle {
-  width: 92px;
-  height: 92px;
-  border-radius: 50%;
-  background: var(--blue);
-  color: #fff;
-  font-weight: 800;
-  font-size: 15px;
-  line-height: 1.15;
-  letter-spacing: 0.01em;
-  display: grid;
-  place-items: center;
-  text-align: center;
-  padding: 4px;
-  box-shadow: 0 8px 20px rgba(28, 111, 210, 0.3);
-}
-
-.ai-chips {
-  margin-top: 10px;
-}
-
-.ai-chips span {
-  display: inline-block;
-  background: #fff;
-  border: 1px solid var(--line);
-  color: var(--blue-deep);
-  border-radius: 999px;
-  padding: 3px 13px;
-  font-size: 13.5px;
-  font-weight: 700;
-  margin: 4px 3px 0;
-}
-
-/* STEP3 ブラウザモック（淡青ライン） */
-.browser {
-  width: 150px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.b-bar {
-  display: flex;
-  gap: 4px;
-  padding: 7px 9px;
-  background: var(--bg-tint);
-  border-bottom: 1px solid #dce9f7;
-}
-
-.b-bar i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #b9d2ef;
-}
-
-.b-body {
-  padding: 12px;
-  display: grid;
-  gap: 7px;
-}
-
-.bl {
-  height: 8px;
-  border-radius: 4px;
-  background: #dbe8f7;
-}
-
-.bl.title {
-  height: 10px;
-  width: 70%;
-  background: var(--blue);
-}
-
-.bl.short {
-  width: 45%;
-}
-
-.tm-learn {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  margin-top: 44px;
-}
-
-.tm-learn li {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 22px 24px;
-  box-shadow: var(--sh-soft);
-}
-
-.tm-learn b {
-  display: block;
-  color: var(--blue-deep);
-  font-size: 16.5px;
-  margin-bottom: 6px;
-}
-
-.tm-learn span {
-  font-size: 14.5px;
-  color: var(--text);
 }
 
 /* ============ 用途別生成 + 活用シーン ============ */
@@ -1561,7 +1380,7 @@ section {
   line-height: 1.6;
 }
 
-/* ============ CTAバンド（exaBase: 濃青帯 + 白ピルボタン） ============ */
+/* ============ CTAバンド ============ */
 .cta-band {
   position: relative;
   isolation: isolate;
@@ -1639,251 +1458,6 @@ section {
 
 .cta-band .ghost:hover {
   background: rgba(255, 255, 255, 0.12);
-}
-
-/* ============ 活用事例 ============ */
-.cases {
-  background: #fff;
-}
-
-.sec-divider {
-  display: none;
-}
-
-/* 図解2: 工程比較 — グレー(従来) vs 青(導入後) のシェブロン */
-.flowcomp {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 36px 32px;
-  margin-bottom: 48px;
-  box-shadow: var(--sh-soft);
-}
-
-.fc-title {
-  text-align: center;
-  font-size: 20px;
-  color: var(--navy);
-  margin-bottom: 28px;
-}
-
-.fc-band {
-  display: inline-block;
-  font-weight: 800;
-  font-size: 14px;
-  border-radius: 999px;
-  padding: 4px 18px;
-  margin-bottom: 12px;
-  line-height: 1.7;
-}
-
-.fc-band-before {
-  background: #eef1f5;
-  color: #5a6b80;
-}
-
-.fc-band-after {
-  background: var(--blue);
-  color: #fff;
-}
-
-.fc-chevrons {
-  display: flex;
-  gap: 4px;
-}
-
-.chv {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  background: #e8eef6;
-  color: #44546b;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.45;
-  padding: 14px 10px 14px 18px;
-  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%);
-}
-
-.chv-first {
-  padding-left: 12px;
-  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
-}
-
-.fc-connector {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin: 20px 0;
-}
-
-.fc-connector svg {
-  width: 18px;
-  height: 18px;
-}
-
-.fc-chip {
-  display: inline-flex;
-  align-items: center;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 7px 20px;
-  box-shadow: 0 4px 12px rgba(22, 51, 95, 0.08);
-}
-
-.fc-chip img {
-  height: 20px;
-  width: auto;
-  display: block;
-}
-
-.fc-after {
-  gap: 10px;
-  align-items: stretch;
-}
-
-.chv3,
-.chv3-first {
-  flex: 1;
-  display: flex;
-}
-
-.chv3-in {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 84px;
-  background: var(--blue);
-  color: #fff;
-  font-weight: 800;
-  font-size: 15.5px;
-  padding: 10px 22px;
-  text-align: center;
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 14px 50%);
-}
-
-.chv3-first .chv3-in {
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%);
-}
-
-.chv3-mid {
-  flex: 2.2;
-  position: relative;
-  display: flex;
-}
-
-.chv3-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.chv3-mid-body {
-  position: relative;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 12px 30px;
-}
-
-.chv3-mid-body b {
-  color: var(--blue-deep);
-  font-size: 16px;
-}
-
-.chv3-mid-body small {
-  margin-top: 4px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.case-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-.case-card {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 34px 32px;
-  box-shadow: var(--sh-soft);
-}
-
-.case-tag {
-  display: inline-block;
-  background: var(--bg-tint);
-  color: var(--blue-deep);
-  border-radius: 999px;
-  font-size: 13.5px;
-  font-weight: 700;
-  padding: 4px 15px;
-  line-height: 1.7;
-}
-
-.case-card h3 {
-  margin: 14px 0 10px;
-  font-size: 18.5px;
-  line-height: 1.6;
-  color: var(--navy);
-}
-
-.case-num {
-  font-size: 34px;
-  font-weight: 900;
-  color: var(--blue-deep);
-  line-height: 1.3;
-}
-
-.case-num .unit {
-  font-size: 0.5em;
-  font-weight: 800;
-}
-
-.case-num .arrow {
-  color: var(--blue);
-  padding: 0 5px;
-  font-weight: 700;
-}
-
-.case-num sup {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.case-cut {
-  display: inline-block;
-  background: var(--blue);
-  color: #fff;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 800;
-  padding: 4px 16px;
-  margin: 8px 0 12px;
-  line-height: 1.7;
-}
-
-.case-quote {
-  font-size: 15px;
-  border-left: 3px solid var(--cyan);
-  padding-left: 14px;
-}
-
-.cases-note {
-  margin-top: 24px;
-  text-align: center;
-  font-size: 13px;
-  color: var(--muted);
 }
 
 /* ============ 導入時インタビュー（※サンプル明記必須セクション） ============ */
@@ -2127,7 +1701,7 @@ section {
   align-items: start;
 }
 
-.contact-copy h2 {
+.contact-copy h1 {
   color: var(--navy);
   font-size: 28px;
   font-weight: 800;
@@ -2252,7 +1826,7 @@ section {
   padding: 15px 48px;
 }
 
-/* ============ フッター（exaBase: 濃青グラデ） ============ */
+/* ============ フッター ============ */
 .site-footer {
   background:
     radial-gradient(900px 420px at 90% 130%, rgba(94, 207, 234, 0.18), transparent 60%),
@@ -2388,7 +1962,6 @@ section {
 
 @media (max-width: 860px) {
   .reason-list,
-  .case-grid,
   .iv-grid {
     grid-template-columns: 1fr;
   }
@@ -2398,9 +1971,8 @@ section {
     grid-auto-rows: auto;
   }
 
-  /* R11: tm-learn(3つの要素)は1列で同じ幅・縦揃え。featuresも1列に */
-  .feature-cards,
-  .tm-learn {
+  /* R11: featuresを1列に */
+  .feature-cards {
     grid-template-columns: 1fr;
     max-width: 480px;
     margin-inline: auto;
@@ -2409,24 +1981,13 @@ section {
   .feature-cards {
     max-width: none;
   }
-
-  .tm-steps {
-    grid-template-columns: 1fr;
-  }
-
-  .tm-arrow {
-    justify-self: center;
-    transform: rotate(90deg);
-  }
 }
 
 @media (max-width: 760px) {
   .logos,
   .reasons,
   .features,
-  .tonmana,
   .usecases,
-  .cases,
   .interview,
   .faq,
   .contact {
@@ -2574,64 +2135,6 @@ section {
     height: 13px;
   }
 
-  /* 工程比較: 縦積みタイルに切替 */
-  .fc-chevrons {
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .chv,
-  .chv-first {
-    clip-path: none;
-    border-radius: 8px;
-    padding: 10px 14px;
-  }
-
-  /* R12: 従来フローは代表3工程＋「ほか4工程」要約バッジに簡略化して縦を圧縮 */
-  .fc-before .chv:nth-child(n + 4) {
-    display: none;
-  }
-
-  .fc-before::after {
-    content: "＋ ほか4工程（デザイン方向性の選定・フレーム作成・デザイン作成・アウトプット微修正）";
-    display: block;
-    margin-top: 2px;
-    background: #f1f4f8;
-    border: 1px dashed #c2ccd8;
-    border-radius: 8px;
-    padding: 9px 14px;
-    font-size: 11.5px;
-    font-weight: 700;
-    line-height: 1.5;
-    color: #5a6b80;
-  }
-
-  .fc-after {
-    gap: 8px;
-  }
-
-  .chv3-in {
-    clip-path: none !important;
-    border-radius: 10px;
-    min-height: 0;
-    padding: 12px 16px;
-  }
-
-  .chv3-bg {
-    display: none;
-  }
-
-  .chv3-mid-body {
-    border: 2px dashed var(--blue);
-    border-radius: 10px;
-    background: rgba(28, 111, 210, 0.06);
-    padding: 14px 18px;
-  }
-
-  .flowcomp {
-    padding: 26px 20px;
-  }
-
   .faq-item .a {
     padding-left: 24px;
   }
@@ -2670,11 +2173,6 @@ section {
     padding: 22px 20px 18px;
   }
 
-  /* 活用事例カード: パディング縮小 */
-  .case-card {
-    padding: 22px 20px;
-  }
-
   /* インタビューカード: パディング縮小 */
   .iv-card {
     padding: 22px 18px 18px;
@@ -2688,30 +2186,6 @@ section {
   /* feature-group間のマージン縮小 */
   .feature-group + .feature-group {
     margin-top: 36px;
-  }
-
-  /* tm-steps の縦積みギャップ縮小 */
-  .tm-steps {
-    gap: 10px;
-  }
-
-  .tm-step {
-    padding: 20px 18px;
-  }
-
-  .tm-art {
-    height: 80px;
-    margin: 12px 0 10px;
-  }
-
-  /* tm-learn: 縦積みギャップ縮小 */
-  .tm-learn {
-    gap: 12px;
-    margin-top: 28px;
-  }
-
-  .tm-learn li {
-    padding: 16px 18px;
   }
 
   /* stats セクション */
@@ -2803,16 +2277,6 @@ section {
     font-size: 11.5px;
   }
 
-  /* flowcomp: タイトルとコネクタを縮小 */
-  .fc-title {
-    font-size: 16px;
-    margin-bottom: 18px;
-  }
-
-  .fc-connector {
-    margin: 12px 0;
-  }
-
   /* scene-wrap h3 */
   .scene-wrap > h3 {
     font-size: 18px;
@@ -2855,16 +2319,12 @@ section {
   }
 
   /* contact section */
-  .contact-copy h2 {
+  .contact-copy h1 {
     font-size: 22px;
   }
 
-  /* reason-list, case-grid, iv-grid ギャップ縮小 */
+  /* reason-list, iv-grid ギャップ縮小 */
   .reason-list {
-    gap: 14px;
-  }
-
-  .case-grid {
     gap: 14px;
   }
 
@@ -2967,18 +2427,8 @@ section {
     padding: 40px 0 !important;
   }
 
-  /* cases padding縮小 */
-  .cases {
-    padding: 40px 0 !important;
-  }
-
   /* usecases padding縮小 */
   .usecases {
-    padding: 40px 0 !important;
-  }
-
-  /* tonmana padding縮小 */
-  .tonmana {
     padding: 40px 0 !important;
   }
 
@@ -3009,17 +2459,6 @@ section {
   .stats-notes {
     margin-top: 20px;
     font-size: 11.5px;
-  }
-
-  /* case-card: h3 & quote 縮小 */
-  .case-card h3 {
-    font-size: 16px;
-    margin: 10px 0 8px;
-  }
-
-  .case-quote {
-    font-size: 13.5px;
-    line-height: 1.7;
   }
 
   /* scene-chips gap */
@@ -3066,20 +2505,9 @@ section {
     margin-top: 4px;
   }
 
-  /* flowcomp margin-bottom縮小 */
-  .flowcomp {
-    margin-bottom: 24px;
-    padding: 20px 14px;
-  }
-
   /* scene-wrap margin-top縮小 */
   .scene-wrap {
     margin-top: 32px;
-  }
-
-  /* cases-note margin-top縮小 */
-  .cases-note {
-    margin-top: 16px;
   }
 
   /* iv-note margin-top縮小 */
@@ -3931,73 +3359,6 @@ section {
   margin: 48px 0 22px;
 }
 
-/* ---- D. トンマナ3要素: ミニビジュアル ---- */
-.tm-learn-lead {
-  text-align: center;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--navy);
-  margin: 40px 0 18px;
-}
-.tm-learn li {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-}
-.tl-viz {
-  width: 100%;
-  height: 92px;
-  background:
-    radial-gradient(120% 100% at 50% 0%, rgba(94, 207, 234, 0.1), transparent 70%),
-    linear-gradient(180deg, #f3f8fd, #eef5fc);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-/* レイアウト ワイヤーフレーム */
-.tl-wire {
-  width: 116px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 9px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  box-shadow: 0 4px 10px rgba(22, 51, 95, 0.08);
-}
-.tlw-head { height: 8px; width: 60%; border-radius: 3px; background: var(--blue); }
-.tlw-row { display: flex; align-items: center; gap: 6px; }
-.tlw-row i { height: 5px; border-radius: 2px; background: #dbe8f7; }
-.tlw-logo { flex: none; width: 14px; height: 14px; border-radius: 4px; background: var(--cyan); margin-left: auto; }
-.tlw-cols { display: flex; gap: 6px; }
-.tlw-cols i { flex: 1; height: 18px; border-radius: 3px; background: #e7eef8; }
-/* ブランドカラー スウォッチ3色 */
-.tl-swatches { display: flex; gap: 10px; }
-.tl-swatches span {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-}
-.tl-swatches span::before {
-  content: "";
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--c);
-  box-shadow: 0 5px 12px rgba(22, 51, 95, 0.18), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
-}
-.tl-swatches em { font-style: normal; font-size: 10px; font-weight: 700; color: var(--muted); }
-/* フォントルール 字形見本 */
-.tl-font { display: flex; align-items: baseline; gap: 10px; }
-.tlf-big { font-size: 38px; font-weight: 900; color: var(--navy); line-height: 1; letter-spacing: 0.01em; }
-.tlf-jp { font-size: 17px; font-weight: 700; color: var(--blue-deep); letter-spacing: 0.08em; }
-
 /* ============ レスポンシブ（ビジュアル強化分） ============ */
 @media (max-width: 900px) {
   .story {
@@ -4039,8 +3400,6 @@ section {
   .scene-sub { margin-top: -8px; margin-bottom: 22px; font-size: 14px; }
   .scene-h2 { font-size: 17px; margin: 34px 0 16px; }
   .story-loop { font-size: 13px; padding: 11px 16px; }
-  .tm-learn-lead { margin: 28px 0 14px; font-size: 15px; }
-  .tl-viz { height: 80px; }
 }
 
 @media (max-width: 560px) {
@@ -4123,7 +3482,4 @@ section {
 
 @media (max-width: 360px) {
   .fm-tm-controls { padding: 8px; }
-  .tlf-big { font-size: 32px; }
-  .tl-swatches { gap: 7px; }
-  .tl-swatches span::before { width: 30px; height: 30px; }
 }

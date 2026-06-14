@@ -3,7 +3,8 @@
 // 掲載資料は src/data/docs.json で管理する。
 // 実ファイルは public/docs/ に置き、JSON の file はそのパス（例: "docs/foo.pdf"）を指定する。
 // available:false は「準備中」のグレーカードとして表示する。
-import "../styles/exa.css";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import "../styles/main.css";
 import docs from "../data/docs.json";
 
 const meta = {
@@ -35,31 +36,31 @@ const items = docs.map((d) => {
   const ext = d.file ? d.file.split(".").pop().toUpperCase() : "";
   return { ...d, size, ext };
 });
+
+const ldBreadcrumb = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "ホーム",
+      item: new URL("/", Astro.site).href,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "資料ダウンロード",
+      item: new URL("/docs/", Astro.site).href,
+    },
+  ],
+};
 ---
 
-<!doctype html>
-<html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{meta.title}</title>
-    <meta name="description" content={meta.description} />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content={meta.title} />
-    <meta property="og:description" content={meta.description} />
-    <meta property="og:image" content="product/og.png" />
-    <meta property="og:site_name" content="SellPro（セルプロ）" />
-    <meta property="og:locale" content="ja_JP" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" href="../logos/sellpro.svg" type="image/svg+xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800;900&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
+<BaseLayout title={meta.title} description={meta.description} canonical="/docs/">
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(ldBreadcrumb)} is:inline></script>
+  </Fragment>
     <header class="site-header">
       <div class="header-inner">
         <a class="brand" href="/" aria-label="SellPro トップへ">
@@ -396,5 +397,4 @@ const items = docs.map((d) => {
         }
       }
     </style>
-  </body>
-</html>
+</BaseLayout>
