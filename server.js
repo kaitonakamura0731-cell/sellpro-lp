@@ -19,9 +19,15 @@
 //   PORT                    待受ポート（既定 4321）
 //   SELLPRO_ADMIN_PASSWORD  管理画面の認証パスワード
 //                           未設定なら起動時に警告。保存API群は 503 を返す。
+//   ADMIN_PATH              管理画面の秘匿パス（任意。例: "/x7k2-manage/"）
+//                           設定時: このパスでのみ dist/admin/index.html を配信し、
+//                                   素の /admin・/admin/ へのアクセスは 404 を返す。
+//                           未設定: 従来どおり /admin/ で配信（開発用）。
+//                           先頭・末尾スラッシュの有無は自動で正規化する。
 //
 // 起動:
 //   SELLPRO_ADMIN_PASSWORD=xxx node server.js
+//   ADMIN_PATH=/secret-xyz/ SELLPRO_ADMIN_PASSWORD=xxx node server.js
 //   （dist/ が無ければ起動時に自動で npm run build を実行）
 // =============================================================================
 
@@ -39,6 +45,18 @@ const PUBLIC_DIR = path.join(ROOT, "public");
 
 const PORT = Number(process.env.PORT) || 4321;
 const ADMIN_PASSWORD = process.env.SELLPRO_ADMIN_PASSWORD || "";
+
+// ADMIN_PATH の正規化: 先頭・末尾スラッシュを保証し、空や "/" は未設定扱いにする。
+// 例: "x7k2-manage" → "/x7k2-manage/"、"/secret/" → "/secret/"
+const ADMIN_PATH = (() => {
+  const raw = process.env.ADMIN_PATH || "";
+  if (!raw) return "";
+  // 先頭・末尾スラッシュを正規化
+  const normalized = "/" + raw.replace(/^\/+/, "").replace(/\/+$/, "") + "/";
+  // "/" だけになった場合（ルートと衝突する）は未設定扱い
+  if (normalized === "//") return "";
+  return normalized;
+})();
 
 // 管理画面の編集対象キー → src/data 内のファイル（api/admin-content.js と一致）
 const FILES = {
@@ -429,6 +447,48 @@ function resolveStaticFile(urlPath) {
 }
 
 function serveStatic(req, res) {
+  const reqPathname = new URL(req.url, "http://localhost").pathname;
+
+  // ==========================================================================
+  // 管理画面の秘匿パス (ADMIN_PATH) によるアクセス制御
+  //   ADMIN_PATH が設定されている場合:
+  //     - ADMIN_PATH そのものへのアクセス → dist/admin/index.html を直接配信
+  //     - /admin または /admin/ へのアクセス → 404（パスが存在しないように見せる）
+  //   ADMIN_PATH が未設定の場合:
+  //     - /admin/ は通常の静的配信ルートで dist/admin/index.html にフォールバック
+  // ==========================================================================
+  if (ADMIN_PATH) {
+    // ADMIN_PATH に来たリクエスト → dist/admin/index.html を配信
+    if (reqPathname === ADMIN_PATH || reqPathname === ADMIN_PATH.slice(0, -1)) {
+      const adminHtml = path.join(DIST_DIR, "admin", "index.html");
+      if (fs.existsSync(adminHtml)) {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        fs.createReadStream(adminHtml)
+          .on("error", () => { res.statusCode = 500; res.end("Internal Server Error"); })
+          .pipe(res);
+      } else {
+        res.statusCode = 404;
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.end("<!doctype html><meta charset=utf-8><title>404</title><h1>404 Not Found</h1>");
+      }
+      return;
+    }
+
+    // 素の /admin・/admin/ へのアクセスは 404 として秘匿する
+    if (reqPathname === "/admin" || reqPathname === "/admin/") {
+      const notFound = path.join(DIST_DIR, "404.html");
+      res.statusCode = 404;
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      if (fs.existsSync(notFound)) {
+        res.end(fs.readFileSync(notFound));
+      } else {
+        res.end("<!doctype html><meta charset=utf-8><title>404</title><h1>404 Not Found</h1>");
+      }
+      return;
+    }
+  }
+
   const filePath = resolveStaticFile(req.url);
 
   if (filePath) {
@@ -499,9 +559,13 @@ async function start() {
   }
 
   server.listen(PORT, () => {
+    const adminUrl = `http://localhost:${PORT}${ADMIN_PATH || "/admin/"}`;
     console.log(`[server] SellPro LP を起動しました → http://localhost:${PORT}`);
     console.log(`[server]   公開LP   : http://localhost:${PORT}/`);
-    console.log(`[server]   管理画面 : http://localhost:${PORT}/admin/`);
+    console.log(`[server]   管理画面 : ${adminUrl}`);
+    if (ADMIN_PATH) {
+      console.log(`[server]   ※ /admin/ は秘匿済み（外部からアクセスしても 404）`);
+    }
   });
 }
 

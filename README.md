@@ -26,7 +26,8 @@ npm run dev      # 開発サーバー（既定 http://localhost:4321）
 ```bash
 npm run build    # 静的サイトを dist/ に出力
 npm run preview  # dist/ をローカルで確認
-SELLPRO_ADMIN_PASSWORD=xxx npm run serve  # 自社ホスト用サーバー server.js（LP＋/admin/ を GitHub/Vercel なしで配信。既定 http://localhost:4321）
+SELLPRO_ADMIN_PASSWORD=xxx npm run serve                            # 自社ホスト用サーバー server.js（LP＋/admin/ を GitHub/Vercel なしで配信。既定 http://localhost:4321）
+ADMIN_PATH=/秘匿パス/ SELLPRO_ADMIN_PASSWORD=xxx npm run serve     # 管理画面を秘匿パスに移動（/admin/ は 404 になる）
 ```
 
 デプロイは `main` ブランチへの push が起点になる。
