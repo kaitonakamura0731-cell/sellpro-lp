@@ -10,7 +10,7 @@
 | 静的サイトジェネレータ | [Astro](https://astro.build/) 4系 |
 | ホスティング | Vercel |
 | CI / デプロイ | GitHub Actions（`main` への push をトリガーに本番反映） |
-| サーバーレス関数 | Vercel Functions（`api/admin-content.js`、管理ページの保存用） |
+| サーバーレス関数 | Vercel Functions（`api/admin-content.js`＝保存用 / `api/admin-upload.js`＝画像・PDFアップロード用） |
 
 ビルドは静的HTMLを出力する。CSSは `inlineStylesheets: "always"` で各HTMLへインライン化される（`astro.config.mjs`）。
 
@@ -40,7 +40,8 @@ main へ push → GitHub Actions（.github/workflows/deploy.yml）→ Vercel 本
 site/
 ├── astro.config.mjs        # site URL・sitemap・ビルド設定
 ├── api/
-│   └── admin-content.js     # 管理ページの保存API（GitHub Contents API 経由）
+│   ├── admin-content.js     # 管理ページの保存API（GitHub Contents API 経由）
+│   └── admin-upload.js      # 管理ページの画像/PDFアップロードAPI（public/ へコミット）
 ├── public/                  # 静的アセット（そのまま配信される）
 │   ├── banner/              # バナー画像
 │   ├── docs/                # 配布PDF
