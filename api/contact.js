@@ -1,9 +1,13 @@
 // Vercel Serverless Function: /api/contact
 // 自社サーバー(server.js)の handleContact と同じ動作を Vercel 上でも提供するミラー実装。
-// 届け先は src/data/site.json の contact.email、SMTP 設定は環境変数（SELLPRO_SMTP_*）。
-// SMTP 未設定なら { ok:false, code:"not-configured" } を返し、フォーム側で mailto フォールバックさせる。
-import nodemailer from "nodemailer";
-import site from "../src/data/site.json";
+// 既存 api/*.js に倣い「トップレベルの重い import を避ける」: JSON は静的 import せず実行時に読み、
+// nodemailer は遅延 import する。これにより初期化時クラッシュ(FUNCTION_INVOCATION_FAILED)を回避する。
+// 届け先: 環境変数 SELLPRO_CONTACT_EMAIL → src/data/site.json の contact.email の順。
+// SMTP: SELLPRO_SMTP_HOST/USER/PASS(+PORT/SECURE/FROM)。未設定/読めない場合は
+//        { ok:false, code:"not-configured" } を返し、フォーム側で mailto フォールバックさせる。
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 function json(res, statusCode, payload) {
   res.statusCode = statusCode;
@@ -13,9 +17,7 @@ function json(res, statusCode, payload) {
 }
 
 async function readJsonBody(req) {
-  if (Buffer.isBuffer(req.body)) {
-    return req.body.length ? JSON.parse(req.body.toString("utf8")) : {};
-  }
+  if (Buffer.isBuffer(req.body)) return req.body.length ? JSON.parse(req.body.toString("utf8")) : {};
   if (req.body && typeof req.body === "object") return req.body;
   if (typeof req.body === "string") return req.body ? JSON.parse(req.body) : {};
   let raw = "";
@@ -24,6 +26,22 @@ async function readJsonBody(req) {
 }
 
 const clip = (v, n) => (v == null ? "" : String(v)).slice(0, n).trim();
+
+// 届け先メールアドレス: 環境変数を最優先し、無ければ src/data/site.json を実行時に読む。
+function getContactEmail() {
+  if (process.env.SELLPRO_CONTACT_EMAIL) return process.env.SELLPRO_CONTACT_EMAIL.trim();
+  const candidates = [
+    path.join(process.cwd(), "src/data/site.json"),
+    fileURLToPath(new URL("../src/data/site.json", import.meta.url)),
+  ];
+  for (const p of candidates) {
+    try {
+      const j = JSON.parse(readFileSync(p, "utf8"));
+      if (j && j.contact && j.contact.email) return String(j.contact.email).trim();
+    } catch {}
+  }
+  return "";
+}
 
 function getSmtpConfig() {
   const host = process.env.SELLPRO_SMTP_HOST;
@@ -76,8 +94,16 @@ export default async function handler(req, res) {
     }
 
     const smtp = getSmtpConfig();
-    const to = site && site.contact && site.contact.email;
+    const to = getContactEmail();
     if (!smtp || !to) {
+      json(res, 200, { ok: false, code: "not-configured" });
+      return;
+    }
+
+    let nodemailer;
+    try {
+      nodemailer = (await import("nodemailer")).default;
+    } catch {
       json(res, 200, { ok: false, code: "not-configured" });
       return;
     }
