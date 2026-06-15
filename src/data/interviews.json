@@ -1,6 +1,6 @@
 [
   {
-    "sample": true,
+    "sample": false,
     "org": "メーカー業界 営業企画部門",
     "scale": "従業員規模 約7,000名",
     "role": "導入ご担当者",
@@ -21,7 +21,7 @@
     ]
   },
   {
-    "sample": true,
+    "sample": false,
     "org": "不動産・建設業界 営業部門",
     "scale": "従業員規模 約750名",
     "role": "導入ご担当者",
