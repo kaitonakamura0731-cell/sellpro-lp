@@ -1,20 +1,24 @@
 # SellPro LP コンテンツ更新ガイド
 
-## 基本運用
+## 基本運用（自社サーバー方式・本納品の標準）
 
-管理ページからデータを更新できます。
+公開ページの内容（バナー / 資料 / インタビュー / ロゴ / FAQ）は、**管理画面（CMS）からブラウザで更新**できます。
 
-- 管理ページ: <https://sellpro-lp.vercel.app/admin/>
+- 管理ページ: サーバーを `npm run serve` で起動した場合、`http(s)://<あなたのドメイン>/<秘匿パス>/`
+  （秘匿パス＝起動時に指定した `ADMIN_PATH`。例 `/x7k2-manage/`）。
+  `ADMIN_PATH` を設定していない開発用では `/admin/` です。
+- 管理パスワード（`SELLPRO_ADMIN_PASSWORD`）でログインします。GitHub の接続情報やトークンは不要です。
+- **保存すると、サーバー（`server.js`）がローカルの `src/data/*.json`・`public/` を直接書き換え、自動で `npm run build` を実行して公開ページ（`dist/`）へ反映します。** GitHub も Vercel も使いません（数秒で反映）。
 
-管理ページでは GitHub の接続情報やトークンを入力しません。
-管理パスワードで開き、保存するとGitHubのJSONファイルへ自動コミットされます。
-`main` にコミットされると GitHub Actions 経由でVercel本番へ反映されます。
+編集はフォーム入力です。フォームに無い項目（下記「お問い合わせ送信先」など）は、ファイルを直接編集します。
 
-編集はフォーム入力が基本です。必要な場合だけ、各編集画面の「JSONを確認・直接編集」を開いて細かく調整できます。
+> Vercel で運用する場合のみ、保存は GitHub Contents API 経由（`GITHUB_CONTENT_TOKEN` 等が必要）になります。本納品の標準は上記の自社サーバー方式です。詳細は `DELIVERY.md` / `CLAUDE.md` を参照。
 
 ---
 
 ## 編集対象
+
+### 管理画面（CMS）から編集できるもの
 
 | 対象 | 編集ファイル | 画像/ファイルの置き場所 |
 | --- | --- | --- |
@@ -23,27 +27,29 @@
 | 導入インタビュー | `src/data/interviews.json` | `public/product/` |
 | 導入企業ロゴ一覧 | `src/data/logos.json` | `public/logos/` |
 | FAQ | `src/data/faqs.json` | なし |
-| お問い合わせ送信先 | `src/data/site.json` | なし |
 
-画像やPDFの新規追加は、先にリポジトリへファイルを追加してからJSONで参照します。
-既存ファイルを使う更新は管理ページだけで反映できます。
+画像やPDFの新規追加は、管理画面のアップロード機能で `public/<フォルダ>/` に追加するか、先にファイルを置いてからJSONで参照します。
+
+### ファイルを直接編集するもの（管理画面では編集不可）
+
+| 対象 | 編集ファイル | 備考 |
+| --- | --- | --- |
+| お問い合わせ送信先 | `src/data/site.json` | `contact.email`（届け先メール）。下記「お問い合わせ送信先」参照。管理画面のタブはありません |
 
 ---
 
-## サーバー設定
+## サーバー設定（環境変数）
 
-管理ページの保存機能には、Vercel本番環境変数が必要です。
+`npm run serve`（自社サーバー方式）で必要・任意の環境変数です。
 
-| 変数名 | 用途 |
-| --- | --- |
-| `SELLPRO_ADMIN_PASSWORD` | 管理ページのパスワード |
-| `GITHUB_CONTENT_TOKEN` | GitHub Contents APIでJSONを更新するサーバー側トークン |
-| `GITHUB_OWNER` | 省略可。既定値 `kaitonakamura0731-cell` |
-| `GITHUB_REPO` | 省略可。既定値 `sellpro-lp` |
-| `GITHUB_BRANCH` | 省略可。既定値 `main` |
+| 変数名 | 要否 | 用途 |
+| --- | --- | --- |
+| `SELLPRO_ADMIN_PASSWORD` | 管理画面を使うなら必須 | 管理ページのログインパスワード |
+| `ADMIN_PATH` | 推奨 | 管理画面の秘匿パス（例 `/x7k2-manage/`）。設定すると素の `/admin/` は 404 になり外部から見えなくなる |
+| `SELLPRO_SMTP_HOST` / `SELLPRO_SMTP_USER` / `SELLPRO_SMTP_PASS` ほか | 任意 | お問い合わせメールを送る場合。詳細は `README.md`「お問い合わせメール（SMTP）」 |
+| `PORT` | 任意 | 待ち受けポート（既定 4321） |
 
-`GITHUB_CONTENT_TOKEN` はブラウザには出ません。
-権限は対象リポジトリのContents読み書きだけに絞るのが理想です。
+> **GitHub 系（`GITHUB_CONTENT_TOKEN` / `GITHUB_OWNER` / `GITHUB_REPO` / `GITHUB_BRANCH`）は Vercel 運用時のみ必要**です。自社サーバー（`server.js`）方式では一切使いません。
 
 ---
 
@@ -63,7 +69,7 @@
 
 - `enabled`: `true`で表示、`false`で非表示
 - `image`: `public/banner/` に置いた画像を `banner/ファイル名` で指定
-- `link`: クリック先URL
+- `link`: クリック先URL。空文字 `""` にするとリンク無し（クリックしても遷移しない）バナーになる
 - `newTab`: `true`で別タブ
 
 ---
@@ -86,6 +92,7 @@
 
 - PDFは `public/docs/` に置く
 - `file` は `docs/ファイル名`
+- `date` は空文字 `""` でも可（その場合は日付を表示しない）
 - `available: false` にすると「準備中」表示
 
 ---
@@ -151,7 +158,7 @@
 
 ## お問い合わせ送信先
 
-`src/data/site.json`
+`src/data/site.json`（**管理画面では編集できません。ファイルを直接編集します**）
 
 ```json
 {
@@ -162,20 +169,26 @@
 ```
 
 - `email` … お問い合わせフォームの**届け先メールアドレス**。ここを変えるだけで宛先が変わります。
-- 送信のしくみ: フォーム → 同じサーバーの `/api/contact`（`server.js`）→ **SMTP でこの宛先へメール送信**。
-  外部サービス（Google等）は使いません。
-- メールを実際に飛ばすには、サーバー起動時に **SMTP 環境変数**（`SELLPRO_SMTP_HOST` / `SELLPRO_SMTP_USER` / `SELLPRO_SMTP_PASS` ほか）を設定します。詳細は `README.md` の「お問い合わせメール（SMTP）」を参照。
-- **SMTP 未設定のあいだ**は、送信ボタンでメールソフトが起動する mailto 方式に自動で切り替わります（この宛先 `email` に届きます）。設定した瞬間に自動でメール送信へ切り替わります。
+  **既定値はテスト用アドレスです。公開前に必ず正式な受信用アドレスへ差し替えてください。**
+- 送信のしくみ: フォーム → 同じサーバーの `/api/contact`（`server.js`）→ **SMTP でこの宛先へメール送信**。外部サービス（Google等）は使いません。
+- **SMTP の有効化はサーバー作業（環境変数の設定＋サーバー再起動）です。** 非エンジニアの方が単独で行う作業ではないため、設置担当・エンジニアに依頼してください（設定値の詳細は `README.md`「お問い合わせメール（SMTP）」）。
+- **SMTP 未設定のあいだ**は、送信ボタンで送信者のメールソフトが起動する mailto 方式で動作します（この宛先 `email` 宛）。SMTP を設定した瞬間に自動でメール送信へ切り替わります。
+- 非エンジニアの方がこのファイルで確認・変更するのは `contact.email`（届け先）だけで十分です。
 
 ---
 
-## ローカルでの確認
+## ローカルでの確認・反映
+
+**自社サーバー方式（標準）**: 管理画面で保存すれば自動でビルド・反映されます。ファイルを直接編集した場合は、サーバーを再起動するか `npm run build` を実行すれば `dist/` に反映されます。表示確認は次のいずれかで行えます。
 
 ```bash
 # プロジェクトルートで実行
-npm run build
-git push origin main
+npm run serve      # 公開ページ＋管理画面を起動して確認（既定 http://localhost:4321）
+# または
+npm run build && npm run preview   # ビルド結果だけを確認
 ```
+
+> Vercel で運用している場合のみ、反映は `git push origin main`（→ GitHub Actions → Vercel 本番）になります。本納品の標準は上記の自社サーバー方式です。
 
 ---
 

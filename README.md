@@ -8,9 +8,9 @@
 | 区分 | 採用技術 |
 | --- | --- |
 | 静的サイトジェネレータ | [Astro](https://astro.build/) 4系 |
-| ホスティング | Vercel |
-| CI / デプロイ | GitHub Actions（`main` への push をトリガーに本番反映） |
-| サーバーレス関数 | Vercel Functions（`api/admin-content.js`＝保存用 / `api/admin-upload.js`＝画像・PDFアップロード用） |
+| ホスティング | **自社サーバー（`server.js`・本納品の標準）** または Vercel（暫定/任意） |
+| CI / デプロイ | 自社サーバー方式は保存時に自動ビルド反映（push不要・GitHub/Vercel不要）。Vercel運用時のみ GitHub Actions（`main` push をトリガー） |
+| サーバーレス関数 | `api/admin-content.js`＝保存 / `api/admin-upload.js`＝画像・PDFアップロード / `api/contact.js`＝お問い合わせメール送信（いずれも**Vercel運用時**。自社サーバーでは `server.js` が同等機能を内蔵） |
 
 ビルドは静的HTMLを出力する。CSSは `inlineStylesheets: "always"` で各HTMLへインライン化される（`astro.config.mjs`）。
 
@@ -33,7 +33,9 @@ ADMIN_PATH=/秘匿パス/ SELLPRO_ADMIN_PASSWORD=xxx \
   SELLPRO_SMTP_HOST=smtp.example.com SELLPRO_SMTP_USER=user@example.com SELLPRO_SMTP_PASS=app-password npm run serve
 ```
 
-デプロイは `main` ブランチへの push が起点になる。
+**自社サーバー方式（標準）**: `npm run serve`（`server.js`）で起動し、`dist/` が無ければ初回起動時に自動ビルドされる。管理画面の保存時にも自動でビルド・反映されるため、push は不要。
+
+**Vercel 運用時のみ**: `main` ブランチへの push が本番反映の起点になる。
 
 ```
 main へ push → GitHub Actions（.github/workflows/deploy.yml）→ Vercel 本番反映
@@ -45,8 +47,9 @@ main へ push → GitHub Actions（.github/workflows/deploy.yml）→ Vercel 本
 site/
 ├── astro.config.mjs        # site URL・sitemap・ビルド設定
 ├── api/
-│   ├── admin-content.js     # 管理ページの保存API（GitHub Contents API 経由）
-│   └── admin-upload.js      # 管理ページの画像/PDFアップロードAPI（public/ へコミット）
+│   ├── admin-content.js     # 管理ページの保存API（Vercel運用時。GitHub Contents API 経由）
+│   ├── admin-upload.js      # 管理ページの画像/PDFアップロードAPI（Vercel運用時。public/ へコミット）
+│   └── contact.js           # お問い合わせメール送信API（Vercel運用時。自社サーバーは server.js が内蔵）
 ├── public/                  # 静的アセット（そのまま配信される）
 │   ├── banner/              # バナー画像
 │   ├── docs/                # 配布PDF
