@@ -2,7 +2,14 @@
 // お問い合わせページ — /contact/
 // docs.astro と同構成（main.css import・LP共通ヘッダー・フッター）
 import BaseLayout from "../layouts/BaseLayout.astro";
+import site from "../data/site.json";
 import "../styles/main.css";
+
+// お問い合わせ送信先（編集可能 / 管理画面の site.json）:
+//   contact.email … 問い合わせの届け先メールアドレス。
+//   送信は同一サーバーの /api/contact が受けて SMTP 送信する（server.js）。
+//   /api/contact が使えない/未設定の環境では、この宛先への mailto に自動フォールバックする。
+const contactEmail = site.contact?.email ?? "geriru0099@gmail.com";
 
 const meta = {
   title: "お問い合わせ | SellPro（セルプロ）- One StepS",
@@ -61,10 +68,15 @@ const ldBreadcrumb = {
               最短デモ30分／初期費用・最低契約期間の有無もお問い合わせ時にご案内。1分で送信できます。
             </p>
             <p class="mailto-note">
-              ※ モック版のため、送信ボタンを押すとお使いのメールソフトが起動します。
+              ※ ご入力内容は担当者宛に送信されます。通常1〜2営業日以内にご返信します。
             </p>
           </div>
-          <form class="contact-form" id="contact-form" novalidate>
+          <form class="contact-form" id="contact-form" novalidate data-email={contactEmail}>
+            <!-- スパム対策: 人間には見えない。bot が入力すると送信を破棄する -->
+            <div class="hp-field" aria-hidden="true">
+              <label for="f-website">Webサイト（入力しないでください）</label>
+              <input id="f-website" name="_gotcha" type="text" tabindex="-1" autocomplete="off" />
+            </div>
             <div class="form-row">
               <div class="field">
                 <label for="f-name">お名前<span class="req">必須</span></label>
@@ -102,7 +114,8 @@ const ldBreadcrumb = {
                 </span>
               </label>
             </div>
-            <button class="btn btn-vivid" type="submit">送信する</button>
+            <button class="btn btn-vivid" id="contact-submit" type="submit">送信する</button>
+            <p class="form-status" id="contact-status" role="status" aria-live="polite" hidden></p>
           </form>
         </div>
       </section>
@@ -131,50 +144,136 @@ const ldBreadcrumb = {
     </footer>
 
     <script is:inline>
-      // お問い合わせフォーム: モックは mailto で送信内容を組み立てる。
-      // 本番では GAS 等のフォームエンドポイントへ POST する実装に差し替える。
+      // お問い合わせフォーム（本番）: 同一サーバーの /api/contact へ送信し、サーバーが SMTP でメール送信する。
+      // /api/contact が無い静的配信や、SMTP未設定・通信失敗時は mailto フォールバックで送信手段を必ず確保する。
       (function () {
         var form = document.getElementById("contact-form");
         if (!form) return;
+        var statusEl = document.getElementById("contact-status");
+        var submitBtn = document.getElementById("contact-submit");
+        var fallbackEmail = (form.getAttribute("data-email") || "geriru0099@gmail.com").trim();
+
+        function showStatus(msg, kind) {
+          if (!statusEl) return;
+          statusEl.textContent = msg;
+          statusEl.className = "form-status" + (kind ? " is-" + kind : "");
+          statusEl.hidden = false;
+        }
+        function setSending(sending) {
+          if (!submitBtn) return;
+          submitBtn.disabled = sending;
+          submitBtn.textContent = sending ? "送信中…" : "送信する";
+        }
+        function getVal(id) {
+          var el = document.getElementById(id);
+          return el ? el.value.trim() : "";
+        }
+        function buildMailto(data) {
+          var lines = [
+            "【SellPro お問い合わせ】",
+            "お名前: " + data.name,
+            "会社名: " + data.company,
+            "メールアドレス: " + data.email,
+            "種別: " + data.type,
+            "",
+            "本文:",
+            data.body || "（未記入）",
+          ];
+          var subject = "【SellPro】" + data.type + "（" + data.name + "様）";
+          return "mailto:" + fallbackEmail + "?subject=" +
+            encodeURIComponent(subject) + "&body=" + encodeURIComponent(lines.join("\n"));
+        }
+
         form.addEventListener("submit", function (e) {
           e.preventDefault();
-          var name = document.getElementById("f-name").value.trim();
-          var company = document.getElementById("f-company").value.trim();
-          var email = document.getElementById("f-email").value.trim();
-          var type = document.getElementById("f-type").value;
-          var body = document.getElementById("f-body").value.trim();
-          if (!name || !company || !email) {
-            alert("お名前・会社名・メールアドレスをご入力ください。");
+          var data = {
+            name: getVal("f-name"),
+            company: getVal("f-company"),
+            email: getVal("f-email"),
+            type: document.getElementById("f-type").value,
+            body: getVal("f-body"),
+          };
+          var hp = document.getElementById("f-website"); // ハニーポット
+
+          if (!data.name || !data.company || !data.email) {
+            showStatus("お名前・会社名・メールアドレスをご入力ください。", "error");
             return;
           }
           // novalidate運用のため、メール形式はJS側で検証する
-          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            alert("メールアドレスの形式をご確認ください。");
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+            showStatus("メールアドレスの形式をご確認ください。", "error");
             return;
           }
           var consent = document.getElementById("f-consent");
           if (consent && !consent.checked) {
-            alert("個人情報の取り扱いへの同意をお願いします。");
+            showStatus("個人情報の取り扱いへの同意をお願いします。", "error");
             return;
           }
-          var lines = [
-            "【SellPro お問い合わせ】",
-            "お名前: " + name,
-            "会社名: " + (company || "（未記入）"),
-            "メールアドレス: " + email,
-            "種別: " + type,
-            "",
-            "本文:",
-            body || "（未記入）",
-          ];
-          var subject = "【SellPro】" + type + "（" + name + "様）";
-          window.location.href =
-            "mailto:geriru0099@gmail.com?subject=" +
-            encodeURIComponent(subject) +
-            "&body=" +
-            encodeURIComponent(lines.join("\n"));
+          if (hp && hp.value) {
+            // bot とみなし、成功を装って黙って破棄
+            showStatus("送信しました。ありがとうございます。", "ok");
+            form.reset();
+            return;
+          }
+
+          // 本番送信: 同一サーバーの /api/contact へ JSON で POST（同一オリジン=CORSなし）。
+          setSending(true);
+          showStatus("送信しています…", "");
+
+          function fallbackToMailto(msg) {
+            setSending(false);
+            showStatus(msg, "ok");
+            window.location.href = buildMailto(data);
+          }
+
+          var payload = {
+            name: data.name,
+            company: data.company,
+            email: data.email,
+            type: data.type,
+            body: data.body,
+            _gotcha: hp ? hp.value : "",
+            page: location.href,
+          };
+
+          fetch("/api/contact", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+            .then(function (res) {
+              return res
+                .json()
+                .catch(function () { return {}; })
+                .then(function (json) { return { ok: res.ok, status: res.status, json: json }; });
+            })
+            .then(function (r) {
+              if (r.ok && r.json && r.json.ok) {
+                setSending(false);
+                form.reset();
+                showStatus("送信しました。担当者より通常1〜2営業日以内にご返信します。", "ok");
+                return;
+              }
+              // サーバーは応答したが送信先未設定（SMTP未設定など）→ mailto フォールバック
+              if (r.json && r.json.code === "not-configured") {
+                fallbackToMailto("メールソフトを起動します。開かない場合は " + fallbackEmail + " 宛にご連絡ください。");
+                return;
+              }
+              // 入力内容のエラー（400）→ その場で表示（フォールバックしない）
+              if (r.status === 400 && r.json && r.json.error) {
+                setSending(false);
+                showStatus(r.json.error, "error");
+                return;
+              }
+              // 404（静的配信）・500 など → mailto フォールバック
+              fallbackToMailto("メールソフトでの送信に切り替えます。開かない場合は " + fallbackEmail + " 宛にご連絡ください。");
+            })
+            .catch(function () {
+              fallbackToMailto("通信に失敗したため、メールソフトでの送信に切り替えます。");
+            });
         });
       })();
+
       // クエリパラメータ ?type=xxx でお問い合わせ種別をプリセレクト
       (function () {
         var select = document.getElementById("f-type");

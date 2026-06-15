@@ -11,7 +11,10 @@
 //               npm run build で dist/ を再生成して反映する。
 //
 // 設計方針:
-//   - 依存追加なし（Node 組み込みモジュールのみ: http/fs/path/child_process/crypto）
+//   - コアは依存追加なし（Node 組み込みモジュールのみ: http/fs/path/child_process/crypto）
+//   - お問い合わせメール送信のみ nodemailer を「遅延 import」で使う。
+//     未インストール／SMTP未設定でもサーバーは通常どおり起動・配信し、
+//     /api/contact は「未設定」を返してフォーム側が mailto に自動フォールバックする。
 //   - GitHub 関連の環境変数は一切使わない
 //   - ビルドは直列化（同時実行させずキューで1本ずつ）
 //
@@ -24,6 +27,15 @@
 //                                   素の /admin・/admin/ へのアクセスは 404 を返す。
 //                           未設定: 従来どおり /admin/ で配信（開発用）。
 //                           先頭・末尾スラッシュの有無は自動で正規化する。
+//   SELLPRO_SMTP_HOST       お問い合わせメール送信に使う SMTP サーバー（例: smtp.example.com）
+//   SELLPRO_SMTP_PORT       SMTP ポート（既定 465）
+//   SELLPRO_SMTP_USER       SMTP ログインユーザー
+//   SELLPRO_SMTP_PASS       SMTP ログインパスワード
+//   SELLPRO_SMTP_FROM       差出人アドレス（任意。既定は SELLPRO_SMTP_USER）
+//   SELLPRO_SMTP_SECURE     TLS接続（"false" で STARTTLS。既定 true=465 SSL）
+//                           ※ HOST/USER/PASS が揃ったときだけメール送信が有効化される。
+//                              未設定時は /api/contact が "not-configured" を返し mailto に切替。
+//                              届け先アドレスは src/data/site.json の contact.email（管理画面で編集可）。
 //
 // 起動:
 //   SELLPRO_ADMIN_PASSWORD=xxx node server.js
@@ -66,6 +78,9 @@ const FILES = {
   logos: "src/data/logos.json",
   faqs: "src/data/faqs.json",
 };
+
+// お問い合わせの届け先などサイト共通設定（管理画面で編集可）
+const SITE_FILE = path.join(ROOT, "src/data/site.json");
 
 // アップロード先フォルダの許可リスト（api/admin-upload.js と一致）
 const FOLDER_ALLOWLIST = new Set(["banner", "logos", "product", "docs"]);
@@ -406,6 +421,144 @@ async function handleAdminUpload(req, res) {
 }
 
 // =============================================================================
+// API: /api/contact
+//   POST body { name, company, email, type, body, _gotcha, page }
+//   → src/data/site.json の contact.email 宛に SMTP でメール送信する。
+//   - ハニーポット(_gotcha) に値があれば bot とみなし、成功を装って破棄する。
+//   - SMTP env 未設定 / nodemailer 未導入 / 届け先未設定なら
+//     { ok:false, code:"not-configured" } を返し、フォーム側で mailto フォールバックさせる。
+// =============================================================================
+
+/** 文字列を最大 n 文字に丸めてトリムする */
+function clip(v, n) {
+  return (v == null ? "" : String(v)).slice(0, n).trim();
+}
+
+/** site.json から問い合わせの届け先メールアドレスを読む（毎回読み直すので管理画面の編集が即反映） */
+function getContactEmail() {
+  try {
+    const json = JSON.parse(fs.readFileSync(SITE_FILE, "utf8"));
+    const email = json && json.contact && json.contact.email;
+    return typeof email === "string" && email ? email : "";
+  } catch {
+    return "";
+  }
+}
+
+/** SMTP 設定を env から組み立てる。HOST/USER/PASS が揃わなければ null（未設定扱い） */
+function getSmtpConfig() {
+  const host = process.env.SELLPRO_SMTP_HOST;
+  const user = process.env.SELLPRO_SMTP_USER;
+  const pass = process.env.SELLPRO_SMTP_PASS;
+  if (!host || !user || !pass) return null;
+  const port = Number(process.env.SELLPRO_SMTP_PORT) || 465;
+  const secure = process.env.SELLPRO_SMTP_SECURE
+    ? process.env.SELLPRO_SMTP_SECURE !== "false"
+    : port === 465;
+  const from = process.env.SELLPRO_SMTP_FROM || user;
+  return { host, port, secure, auth: { user, pass }, from };
+}
+
+/** お問い合わせ内容をメール送信する（nodemailer は遅延 import）。未導入時は NO_NODEMAILER を投げる */
+async function sendContactMail(smtp, to, d) {
+  let nodemailer;
+  try {
+    nodemailer = (await import("nodemailer")).default;
+  } catch {
+    const e = new Error("nodemailer is not installed");
+    e.code = "NO_NODEMAILER";
+    throw e;
+  }
+  const transporter = nodemailer.createTransport({
+    host: smtp.host,
+    port: smtp.port,
+    secure: smtp.secure,
+    auth: smtp.auth,
+  });
+  const subject = `【SellPro お問い合わせ】${d.type || "お問い合わせ"}（${d.name} 様）`;
+  const text = [
+    "■ SellPro LP お問い合わせ",
+    "",
+    `お名前　： ${d.name}`,
+    `会社名　： ${d.company}`,
+    `メール　： ${d.email}`,
+    `種別　　： ${d.type || "（未選択）"}`,
+    "",
+    "本文：",
+    d.body || "（未記入）",
+    "",
+    "---",
+    `送信元　： ${d.page || "不明"}`,
+    `受信日時： ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}`,
+  ].join("\n");
+  await transporter.sendMail({ from: smtp.from, to, replyTo: d.email, subject, text });
+}
+
+async function handleContact(req, res) {
+  if (req.method === "OPTIONS") {
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+  if (req.method !== "POST") {
+    sendJson(res, 405, { ok: false, error: "この操作は対応していません。" });
+    return;
+  }
+
+  try {
+    const body = await readJsonBody(req);
+
+    // スパム対策: ハニーポットに値 → bot とみなし成功を装って破棄
+    if (clip(body._gotcha, 100)) {
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    const d = {
+      name: clip(body.name, 200),
+      company: clip(body.company, 200),
+      email: clip(body.email, 200),
+      type: clip(body.type, 100),
+      body: clip(body.body, 5000),
+      page: clip(body.page, 500),
+    };
+
+    if (!d.name || !d.company || !d.email) {
+      sendJson(res, 400, { ok: false, error: "お名前・会社名・メールアドレスをご入力ください。" });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) {
+      sendJson(res, 400, { ok: false, error: "メールアドレスの形式をご確認ください。" });
+      return;
+    }
+
+    const smtp = getSmtpConfig();
+    const to = getContactEmail();
+    // SMTP 未設定 or 届け先未設定 → フォーム側で mailto フォールバックさせる
+    if (!smtp || !to) {
+      sendJson(res, 200, { ok: false, code: "not-configured" });
+      return;
+    }
+
+    try {
+      await sendContactMail(smtp, to, d);
+    } catch (err) {
+      if (err && err.code === "NO_NODEMAILER") {
+        sendJson(res, 200, { ok: false, code: "not-configured" });
+        return;
+      }
+      console.error("[server] お問い合わせメール送信に失敗:", err && err.message);
+      sendJson(res, 500, { ok: false, error: "送信処理に失敗しました。" });
+      return;
+    }
+
+    sendJson(res, 200, { ok: true });
+  } catch (error) {
+    sendJson(res, 500, { ok: false, error: error.message || "処理に失敗しました。" });
+  }
+}
+
+// =============================================================================
 // 静的配信（dist/）
 // =============================================================================
 
@@ -530,6 +683,10 @@ const server = http.createServer((req, res) => {
   }
   if (pathname === "/api/admin-upload") {
     handleAdminUpload(req, res);
+    return;
+  }
+  if (pathname === "/api/contact") {
+    handleContact(req, res);
     return;
   }
 

@@ -23,6 +23,7 @@
 | 導入インタビュー | `src/data/interviews.json` | `public/product/` |
 | 導入企業ロゴ一覧 | `src/data/logos.json` | `public/logos/` |
 | FAQ | `src/data/faqs.json` | なし |
+| お問い合わせ送信先 | `src/data/site.json` | なし |
 
 画像やPDFの新規追加は、先にリポジトリへファイルを追加してからJSONで参照します。
 既存ファイルを使う更新は管理ページだけで反映できます。
@@ -145,6 +146,26 @@
 ```
 
 トップページのFAQ表示と、検索エンジン向けFAQ構造化データの両方に使われます。
+
+---
+
+## お問い合わせ送信先
+
+`src/data/site.json`
+
+```json
+{
+  "contact": {
+    "email": "geriru0099@gmail.com"
+  }
+}
+```
+
+- `email` … お問い合わせフォームの**届け先メールアドレス**。ここを変えるだけで宛先が変わります。
+- 送信のしくみ: フォーム → 同じサーバーの `/api/contact`（`server.js`）→ **SMTP でこの宛先へメール送信**。
+  外部サービス（Google等）は使いません。
+- メールを実際に飛ばすには、サーバー起動時に **SMTP 環境変数**（`SELLPRO_SMTP_HOST` / `SELLPRO_SMTP_USER` / `SELLPRO_SMTP_PASS` ほか）を設定します。詳細は `README.md` の「お問い合わせメール（SMTP）」を参照。
+- **SMTP 未設定のあいだ**は、送信ボタンでメールソフトが起動する mailto 方式に自動で切り替わります（この宛先 `email` に届きます）。設定した瞬間に自動でメール送信へ切り替わります。
 
 ---
 

@@ -1826,6 +1826,35 @@ section {
   padding: 15px 48px;
 }
 
+/* スパム対策ハニーポット: 画面・支援技術の双方から隠す（display:none はbotに気づかれるため位置で隠す） */
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* 送信状態メッセージ */
+.form-status {
+  margin: 14px 0 0;
+  padding: 11px 15px;
+  border-radius: 9px;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  font-weight: 600;
+}
+.form-status.is-ok {
+  background: #e8f4ec;
+  border: 1px solid #b6dcc4;
+  color: #1f6b3e;
+}
+.form-status.is-error {
+  background: #fdecec;
+  border: 1px solid #f3c4c4;
+  color: #b3261e;
+}
+
 /* ============ フッター ============ */
 .site-footer {
   background:
