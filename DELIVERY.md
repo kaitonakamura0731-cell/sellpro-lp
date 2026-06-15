@@ -101,13 +101,20 @@ npm run build      # dist/ に純粋な静的サイトが出力される
 ```
 `dist/` の中身を nginx / Apache / 任意の静的ホスティングに置くだけで公開できます（Node実行環境は不要）。動作確認は `npx serve dist` でも可。
 
-### 7-2. CMS（`/admin/`）— Vercel依存。自社サーバーでは要対応
-`api/admin-content.js` / `api/admin-upload.js` は **Vercel Serverless Functions**（Nodeの `handler(req, res)` 形式）で、かつ「ブラウザ編集 → GitHubへコミット → 再ビルドで静的サイト更新」という**ホスト側の自動再ビルドを前提とした仕組み**です。自社サーバーでは次のどちらかになります。
+### 7-2. CMS（`/admin/`）— 自社サーバーでの動かし方
+自社サーバーでCMSを使うか使わないかで、次の (A) / (B) いずれかになります。**(A) を推奨**（同梱の `server.js` で配線不要）。
 
-- **(A) CMSを活かす**：`/api/admin-content` と `/api/admin-upload` を自社のNodeサーバー（Express等）でエンドポイント化し、各 `handler(req,res)` を呼ぶ。さらに「コミット → `git pull && npm run build` → `dist/` 再配信」をWebフック等で自動化する。env（`SELLPRO_ADMIN_PASSWORD` / `GITHUB_CONTENT_TOKEN` 等）も設定。
-- **(B) CMSを使わない（エンジニア運用なら現実的）**：管理画面を使わず、`src/data/*.json` を直接編集し、画像は `public/` に置き、`npm run build` → `dist/` を再配信。**コンテンツの実体は `src/data/*.json` と `public/` のファイルなので、CMSが無くても全項目を更新できます**（仕様は `src/data/README-CMS.md`）。CMS（`/admin/` と `api/`）は不要なら削除してもLP本体は影響を受けません。
+- **(A) 自社サーバーでCMSも使う（同梱の `server.js` を使えば配線不要）**：本納品物には自己完結サーバー `server.js` を同梱しています。GitHub / Vercel は不要で、次の3手順だけで `http://localhost:4321` にLPと `/admin/` が両方立ち上がります。
+  1. `npm install`（依存取得。`server.js` 自体は追加依存なし＝Node組み込みのみ）
+  2. `npm run build`（初回のみ。`dist/` が無ければ `server.js` 起動時に自動実行されます）
+  3. `SELLPRO_ADMIN_PASSWORD=xxx npm run serve`（`xxx` は管理画面のログインパスワード。ポートを変えるなら `PORT=8080 SELLPRO_ADMIN_PASSWORD=xxx npm run serve`）
 
-> まとめ：**公開LPは静的でポータブル。CMSはVercel/CI結合**のため、自社ホストでは (A)サーバー対応 か (B)JSON直編集 を選ぶ。
+  管理画面で保存すると、`server.js` が**ローカルの `src/data/*.json`（画像/PDFは `public/<folder>/`）を直接更新し、自動で `npm run build` を実行して `dist/` に反映**します。GitHub へのコミットも外部CIも不要です。常時運用する場合は `npm run serve` を systemd / pm2 等のプロセス管理下に置き、リバースプロキシ（nginx 等）で公開してください。
+- **(B) CMSを使わず JSON を直接編集する（エンジニア運用なら現実的）**：管理画面を使わず、`src/data/*.json` を直接編集し、画像は `public/` に置き、`npm run build` → `dist/` を再配信。**コンテンツの実体は `src/data/*.json` と `public/` のファイルなので、CMSが無くても全項目を更新できます**（仕様は `src/data/README-CMS.md`）。CMS（`/admin/` と `api/`）は不要なら削除してもLP本体は影響を受けません。
+
+> 補足：`api/admin-content.js` / `api/admin-upload.js` は **Vercel Serverless Functions ＋ GitHub Contents API** 用の実装で、Vercelホスト時に使われます。自社サーバーでは代わりに `server.js`（GitHub不要・ローカルfsに直接書き込み）が同じAPIパスを提供するため、管理画面（`admin.astro`）は無改修でそのまま動きます。
+
+> まとめ：**公開LPは静的でポータブル**。自社ホストでCMSも使うなら **(A) `npm run serve`（`server.js`）一発**、エンジニアがJSONを直接触るなら **(B) JSON直編集**。
 
 ## 8. 残課題・申し送り
 - **本番ドメイン未確定**：確定後に `astro.config.mjs` の `site:` を差し替える（現状は暫定で Vercel のURL）。あわせて **`public/robots.txt` の `Sitemap:` 行は手動更新が必要**です（このファイルは静的でビルド時に自動置換されないため、`site:` 変更時に同じドメインへ書き換えてください）。
